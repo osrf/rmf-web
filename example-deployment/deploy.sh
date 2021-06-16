@@ -105,7 +105,7 @@ done
 
 # run migration job
 echo 'running migration job...'
-kubectl apply -f k8s/jobs.yaml
+.bin/minikube kubectl -- apply -f k8s/jobs.yaml
 
 echo 'deploying Minio...'
 .bin/minikube kubectl -- apply -f k8s/minio.yaml
@@ -126,5 +126,5 @@ do
 done
 
 echo 'killing migration job...'
-kubectl delete -f k8s/jobs.yaml
+.bin/minikube kubectl  -- delete -f k8s/jobs.yaml
 
