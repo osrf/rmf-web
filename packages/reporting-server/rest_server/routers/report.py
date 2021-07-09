@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from fastapi import APIRouter
 from models.auth_events import AuthEvents_Pydantic
@@ -32,7 +32,7 @@ router = APIRouter()
 LIMIT = 500
 
 
-@router.get("/raw_logs/", tags=["raw_logs"], response_model=List[RawLog_Pydantic])
+@router.get("/raw_logs/", tags=["raw_logs"], response_model=List[Any])
 async def raw_logs_report(
     toLogDate: Optional[str] = None,
     fromLogDate: Optional[str] = None,
