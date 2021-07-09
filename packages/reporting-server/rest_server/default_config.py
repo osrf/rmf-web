@@ -3,7 +3,8 @@ config = {
     "host": "127.0.0.1",  # ip or hostname to bind the socket to
     "port": 8002,
     "port_fluentd": 8003,
-    "db_url": "sqlite://:memory:",
+    # "db_url": "sqlite://:memory:",
+    "db_url": "postgres://postgres:postgres@localhost:5432/reporting5",
     # url that reporting-server is being served on.
     # When being a proxy, this must be the url that reporting-server is mounted on.
     # E.g. https://example.com/logserver/api/v1

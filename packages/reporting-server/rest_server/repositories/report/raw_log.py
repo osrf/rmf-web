@@ -2,6 +2,7 @@ from datetime import timezone
 from typing import Optional
 
 from dateutil import parser
+from models.container import Container
 from models.raw_log import RawLog, RawLog_Pydantic
 
 
@@ -26,16 +27,23 @@ async def get_all_raw_logs(
         query["created__lt"] = to_log_utc_time
 
     if container_label and container_label != "all":
-        query["container_name__iexact"] = container_label
+        query["container__name__iexact"] = container_label
 
     if log_level and log_level != "all":
         query["level__iexact"] = log_level
 
+    results = await RawLog.filter(**query).values(
+        "level", "message", container="container__name"
+    )
+    return await RawLog.filter(**query).values(
+        "level", "message", "created", container_name="container__name"
+    )
+    print(results[0])
     return await RawLog_Pydantic.from_queryset(
         RawLog.filter(**query).offset(offset).limit(limit).order_by("-created")
     )
 
 
 async def get_containers():
-    raw_containers = await RawLog.all().distinct().values("container_name")
-    return [x["container_name"] for x in raw_containers]
+    raw_containers = await Container.all()
+    return [x.name for x in raw_containers]

@@ -43,7 +43,6 @@ const useStyles = makeStyles((theme) => ({
 export const LogTable = (props: LogTableProps): React.ReactElement => {
   const { rows, tableSize, addMoreRows } = props;
   const classes = useStyles();
-
   const getLogLevelStyle = (level: string): string | undefined => {
     level = level.toLowerCase();
     switch (level) {
