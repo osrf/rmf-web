@@ -17,7 +17,7 @@ async function setClientScopeToClient(headers, clientId, clientScopeId) {
 
 async function createAudienceClientScope(headers, name, description, audience) {
   // set client with client scope
-  return await request(
+  return await tryRequest(
     `${baseUrl}/admin/realms/rmf-web/client-scopes`,
     {
       method: 'POST',
@@ -48,7 +48,7 @@ async function createAudienceClientScope(headers, name, description, audience) {
     const token = await getToken();
     let resp;
 
-    // creates the rmf-web realm.
+    console.log('create rmf-web realm');
     await tryRequest(
       `${baseUrl}/admin/realms/`,
       {
@@ -61,7 +61,7 @@ async function createAudienceClientScope(headers, name, description, audience) {
       },
     );
 
-    // creates the dashboard client
+    console.log('create dashboard client');
     await tryRequest(
       `${baseUrl}/admin/realms/rmf-web/clients`,
       {
@@ -74,9 +74,68 @@ async function createAudienceClientScope(headers, name, description, audience) {
         redirectUris: ['https://example.com/*'],
         webOrigins: ['https://example.com'],
         publicClient: true,
+        directAccessGrantsEnabled: true,
       },
     );
 
+    console.log('get dashboard keycloak client id');
+    resp = await request(`${baseUrl}/admin/realms/rmf-web/clients?clientId=dashboard`, {
+      method: 'GET',
+      headers: authHeaders(token),
+    });
+    let dashboardKCId = resp.body[0].id;
+
+    const keycloakRoleIdMap = {};
+
+    console.log('create rmf roles');
+    const roles = ['_rmf_superadmin', '_rmf_task_submit', '_rmf_task_cancel', '_rmf_task_admin'];
+    for (const role of roles) {
+      console.log(`create ${role} role`);
+      await tryRequest(
+        `${baseUrl}/admin/realms/rmf-web/clients/${dashboardKCId}/roles`,
+        {
+          method: 'POST',
+          headers: authHeaders(token),
+        },
+        {
+          name: role,
+        },
+      );
+      resp = await request(
+        `${baseUrl}/admin/realms/rmf-web/clients/${dashboardKCId}/roles/${role}`,
+        {
+          method: 'GET',
+          headers: authHeaders(token),
+        },
+      );
+      keycloakRoleIdMap[role] = resp.body.id;
+    }
+
+    console.log('create exmaple roles/groups');
+    const groups = ['rmf_group_1', 'rmf_group_2'];
+    for (const group of groups) {
+      console.log(`create ${group} role`);
+      await tryRequest(
+        `${baseUrl}/admin/realms/rmf-web/clients/${dashboardKCId}/roles`,
+        {
+          method: 'POST',
+          headers: authHeaders(token),
+        },
+        {
+          name: group,
+        },
+      );
+      resp = await request(
+        `${baseUrl}/admin/realms/rmf-web/clients/${dashboardKCId}/roles/${group}`,
+        {
+          method: 'GET',
+          headers: authHeaders(token),
+        },
+      );
+      keycloakRoleIdMap[group] = resp.body.id;
+    }
+
+    console.log('create reporting server client');
     await tryRequest(
       `${baseUrl}/admin/realms/rmf-web/clients`,
       {
@@ -89,41 +148,61 @@ async function createAudienceClientScope(headers, name, description, audience) {
         redirectUris: ['https://example.com/*'],
         webOrigins: ['https://example.com'],
         publicClient: true,
+        directAccessGrantsEnabled: true,
       },
     );
 
-    // create example user
-    await tryRequest(
-      `${baseUrl}/admin/realms/rmf-web/users`,
-      {
-        method: 'POST',
+    console.log('create example users');
+    const users = [
+      { username: 'admin', roles: ['_rmf_superadmin'] },
+      { username: 'example1', roles: ['rmf_group_1', '_rmf_task_submit', '_rmf_task_cancel'] },
+      { username: 'example2', roles: ['rmf_group_2', '_rmf_task_submit', '_rmf_task_cancel'] },
+      { username: 'example3', roles: ['rmf_group_1'] },
+    ];
+    for (const user of users) {
+      console.log(`create user ${user.username}`);
+      await tryRequest(
+        `${baseUrl}/admin/realms/rmf-web/users`,
+        {
+          method: 'POST',
+          headers: authHeaders(token),
+        },
+        {
+          username: user.username,
+          enabled: true,
+        },
+      );
+
+      // get the newly created user
+      resp = await request(`${baseUrl}/admin/realms/rmf-web/users?username=${user.username}`, {
+        method: 'GET',
         headers: authHeaders(token),
-      },
-      {
-        username: 'example',
-        enabled: true,
-      },
-    );
+      });
+      const keycloakUser = resp.body[0];
 
-    // get the newly created user
-    resp = await request(`${baseUrl}/admin/realms/rmf-web/users?username=example`, {
-      method: 'GET',
-      headers: authHeaders(token),
-    });
-    const user = JSON.parse(resp.body)[0];
+      console.log(`add roles ${user.roles} to user ${user.username}`);
+      await tryRequest(
+        `${baseUrl}/admin/realms/rmf-web/users/${keycloakUser.id}/role-mappings/clients/${dashboardKCId}`,
+        {
+          method: 'POST',
+          headers: authHeaders(token),
+        },
+        user.roles.map((role) => ({ id: keycloakRoleIdMap[role], name: role })),
+      );
 
-    // set the password
-    await request(
-      `${baseUrl}/admin/realms/rmf-web/users/${user.id}/reset-password`,
-      {
-        method: 'PUT',
-        headers: authHeaders(token),
-      },
-      {
-        value: 'example',
-        temporary: false,
-      },
-    );
+      // set the password
+      await request(
+        `${baseUrl}/admin/realms/rmf-web/users/${keycloakUser.id}/reset-password`,
+        {
+          method: 'PUT',
+          headers: authHeaders(token),
+        },
+        {
+          value: user.username,
+          temporary: false,
+        },
+      );
+    }
 
     await tryRequest(
       `${baseUrl}/admin/realms/rmf-web/events/config`,
@@ -137,7 +216,7 @@ async function createAudienceClientScope(headers, name, description, audience) {
       },
     );
 
-    // create audience client scope
+    console.log('create audience client scopes');
     await createAudienceClientScope(
       authHeaders(token),
       'dashboard',
@@ -152,30 +231,27 @@ async function createAudienceClientScope(headers, name, description, audience) {
       'reporting',
     );
 
-    // get existing clients (dashboard and reporting)
+    console.log('assign audience client scopes');
+    // get existing clients
     const clientsRaw = await request(`${baseUrl}/admin/realms/rmf-web/clients`, {
       method: 'GET',
       headers: authHeaders(token),
     });
 
-    const clientArray = JSON.parse(clientsRaw.body);
-
-    const dashboardId = clientArray.filter(function (item) {
-      return item.clientId === 'dashboard';
-    })[0].id;
+    const clientArray = clientsRaw.body;
 
     const reportingId = clientArray.filter(function (item) {
       return item.clientId === 'reporting';
     })[0].id;
 
-    // get existing clients (dashboard and reporting)
+    // get existing clients scopes (dashboard and reporting)
     const clientsScopeRaw = await request(`${baseUrl}/admin/realms/rmf-web/client-scopes`, {
       method: 'GET',
       headers: authHeaders(token),
     });
 
-    const clientScopesArray = JSON.parse(clientsScopeRaw.body);
-    const clientScopeDashboardId = clientScopesArray.filter(function (item) {
+    const clientScopesArray = clientsScopeRaw.body;
+    const clientScopeRmfServerId = clientScopesArray.filter(function (item) {
       return item.name == 'dashboard';
     })[0].id;
 
@@ -183,7 +259,7 @@ async function createAudienceClientScope(headers, name, description, audience) {
       return item.name == 'reporting';
     })[0].id;
 
-    await setClientScopeToClient(authHeaders(token), dashboardId, clientScopeDashboardId);
+    await setClientScopeToClient(authHeaders(token), dashboardKCId, clientScopeRmfServerId);
     await setClientScopeToClient(authHeaders(token), reportingId, clientScopeReportingId);
   } catch (e) {
     process.exitCode = 1;

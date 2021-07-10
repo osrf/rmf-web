@@ -75,6 +75,55 @@ For example, if rmf-server is served on https://example.com/rmf/api/v1, `public_
 
 When running with rmf simulations, you need to set the env `RMF_SERVER_USE_SIM_TIME=true`. This is needed to ensure that times from the client are correctly converted to RMF's simulation time.
 
+# Authentication and Authorization
+
+## OpenID Connect
+
+rmf-server does not manage user identities and access levels by itself, it uses an OpenID Connect compatibily authentication server. Therefore, in order to management an user's access level and roles, you should change it from the authentication server, there are no endpoints for account management in rmf-server for now. If using keycloak as the authentication server, see https://www.keycloak.org/docs/latest/server_admin/index.html#roles for detailed documentation.
+
+## Access Token Requirements
+
+### Format
+
+OpenID Connect does not define the format of the access token, the canonical way for a resource server to validate an access token is to use the token introspection endpoint of the authentication server. In order to not have to connect to the authentication server for every request, rmf-server assumes the convention that the access token is a JWT that can be verified independently. Most modern authentication server and services like keycloak and auth0 follows this convention.
+
+### Claims
+
+OpenID Connect does not specify a conventional way to obtain an user's access levels or roles. It does however allows arbitrary claims to be defined for an user, to that end, rmf-server makes use of the `resource_access` claim defined by default in keycloak to obtain an user's roles. The claim should be in the form
+
+```json
+"resource_access": {
+  "${cliend_id}": {
+    "roles": [
+      ...
+    ]
+  }
+}
+```
+
+where `client_id` refers to the client id created in keycloak. This claim should be attached to the access token. If using other authentication servers, you need to config it such that it returns the same claim.
+
+## Roles and Groups
+
+While authentication and managing user access is done in the authentication server, authorization is done in-app by rmf-server. With the correct access token, rmf-server can securely find out about an user's roles, below are the list of builtin roles that rmf-server understands:
+
+| Role | Description |
+| - | - |
+| _rmf_task_submit | Submit task |
+| _rmf_task_cancel | Cancel an existing task |
+| _rmf_task_admin | Able to manage tasks created by anyone |
+| _rmf_superadmin | Superset of all roles |
+
+On top of the builtin roles, user's can be assigned to any roles that begins with `rmf_`, these roles will be considered as "groups" by rmf-server. rmf-server will attach these groups to any resources they create, any users with any of the groups will have read access to these resources. Each resource also has an owner, the owner will always have full control over the resource.
+
+For example, given an user alice, which has the roles `["rmf_kitchen", "_rmf_task_submit"]` and bob which has the roles `["rmf_kitchen"]`. Alice will be able to submit a new task, since alice is the owner of the task, she will be able to cancel it even though she doesn't have the `_rmf_task_cancel` role. Bob on the other hand will not be able to cancel the task unless he has the `_rmf_task_cancel` role. Bob also cannot submit new tasks because he does not have the `_rmf_task_submit` role, however, he will be able to see the tasks created by alice because he has the same `rmf_kitchen` role as alice.
+
+Assume a third user, charlie who has the roles `["_rmf_task_cancel", "rmf_bedroom"]`, he will not be able to see or cancel the task created by alice because he doesn't have the `rmf_kitchen` role. However, if alice also has the `rmf_bedroom` role, then charlie will be able to see and cancel the task. Similarly, if charlie has the roles `["_rmf_task_admin"]`, he will be able to see the task created by alice, but will not be able to cancel it unless he also has `_rmf_task_cancel`.
+
+## Difference between role and group
+
+Both roles and groups are represented by the same JWT claims, the differentiation between them is mostly semantic to make the system more intuitive. A rmf-server role is a jwt role starting with `_rmf_` and a group is a jwt role starting with `rmf_`, other jwt roles are ignored by rmf-server. Generally, a role determines if an user is able to perform certain actions like submitting tasks, a group on the other hand determines the visibility and access rights of an user.
+
 # Developers
 
 ## About FastIO

@@ -4,9 +4,9 @@ const { request, baseUrl } = require('./utils');
   try {
     // get the jws
     let resp = await request(`${baseUrl}/realms/rmf-web/.well-known/openid-configuration`);
-    const jwksUri = JSON.parse(resp.body).jwks_uri;
+    const jwksUri = resp.body.jwks_uri;
     resp = await request(jwksUri);
-    const jwks = JSON.parse(resp.body);
+    const jwks = resp.body;
     const jws = jwks.keys[0];
     if (!jws) {
       process.exitCode = 1;

@@ -17,6 +17,8 @@ describe('Login page', () => {
     user = {
       username: 'test',
       token: '',
+      roles: [],
+      groups: [],
     };
     authenticator = new FakeAuthenticator();
   });
@@ -55,7 +57,12 @@ describe('Login page', () => {
   });
 
   test('performs login when login button is clicked', () => {
-    const authenticator = new FakeAuthenticator({ username: 'fakeUser', token: '' });
+    const authenticator = new FakeAuthenticator({
+      username: 'fakeUser',
+      token: '',
+      roles: [],
+      groups: [],
+    });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const spy = jest.spyOn(authenticator, 'login').mockImplementation(() => undefined as any);
 

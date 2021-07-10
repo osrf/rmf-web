@@ -37,6 +37,7 @@ class App(FastIO):
         authenticator = (
             JwtAuthenticator(
                 app_config.jwt_public_key,
+                app_config.client_id,
                 app_config.aud,
                 app_config.iss,
             )
@@ -44,11 +45,12 @@ class App(FastIO):
             else None
         )
 
+        auth_dep = auth_scheme(authenticator, app_config.oidc_url)
         super().__init__(
             authenticator=authenticator,
             logger=logger,
             title="RMF API Server",
-            dependencies=[Depends(auth_scheme(authenticator, app_config.oidc_url))],
+            dependencies=[Depends(auth_dep)],
         )
 
         self.fapi.add_middleware(
@@ -128,7 +130,7 @@ class App(FastIO):
                 ready = self.rmf_gateway.get_tasks_srv.wait_for_service(1)
                 if not ready:
                     raise HTTPException(503, "ros service not ready")
-                await self.rmf_gateway.update_tasks(rmf_repo)
+                await self.rmf_gateway.update_tasks()
             except HTTPException as e:
                 logger.error(f"failed to update tasks from RMF ({e.detail})")
 
@@ -160,7 +162,10 @@ class App(FastIO):
         )
         self.include_router(
             routes.TasksRouter(
-                self.rmf_events, rmf_bookkeeper.bookkeeper_events, rmf_gateway_dep
+                auth_dep,
+                self.rmf_repo,
+                self.rmf_events,
+                rmf_gateway_dep,
             ),
             prefix="/tasks",
         )

@@ -1,9 +1,8 @@
 import asyncio
-import concurrent.futures
 
 from ..models import TaskSummary
 from ..models import tortoise_models as ttm
-from .test_fixtures import RouteFixture
+from ..test.test_fixtures import RouteFixture
 
 
 class TestBaseQuery(RouteFixture):
@@ -17,18 +16,13 @@ class TestBaseQuery(RouteFixture):
             )
             for i in range(200)
         ]
-        fut = concurrent.futures.Future()
 
         async def save_data():
-            fut.set_result(
-                await asyncio.gather(
-                    *(ttm.TaskSummary.save_pydantic(data) for data in dataset)
-                )
+            await asyncio.gather(
+                *(ttm.TaskSummary.save_pydantic(t, cls.user) for t in dataset)
             )
 
-        cls.server.app.wait_ready()
-        cls.server.app.loop.create_task(save_data())
-        fut.result()
+        cls.run_in_app_loop(save_data())
 
     def test_limit_results(self):
         resp = self.session.get(f"{self.base_url}/tasks")
@@ -43,7 +37,7 @@ class TestBaseQuery(RouteFixture):
         resp_json = resp.json()
         self.assertEqual(resp_json["total_count"], 200)
         self.assertEqual(len(resp_json["items"]), 50)
-        self.assertEqual(resp_json["items"][0]["task_summary"]["task_id"], "task_150")
+        self.assertEqual(resp_json["items"][0]["summary"]["task_id"], "task_150")
 
     def test_order_by(self):
         resp = self.session.get(f"{self.base_url}/tasks?order_by=-priority")
@@ -51,7 +45,7 @@ class TestBaseQuery(RouteFixture):
         resp_json = resp.json()
         self.assertEqual(resp_json["total_count"], 200)
         self.assertEqual(len(resp_json["items"]), 100)
-        self.assertEqual(resp_json["items"][0]["task_summary"]["task_id"], "task_199")
+        self.assertEqual(resp_json["items"][0]["summary"]["task_id"], "task_199")
 
     def test_order_by_mapped_fields(self):
         resp = self.session.get(f"{self.base_url}/tasks?order_by=-task_id")
@@ -59,7 +53,7 @@ class TestBaseQuery(RouteFixture):
         resp_json = resp.json()
         self.assertEqual(resp_json["total_count"], 200)
         self.assertEqual(len(resp_json["items"]), 100)
-        self.assertEqual(resp_json["items"][0]["task_summary"]["task_id"], "task_99")
+        self.assertEqual(resp_json["items"][0]["summary"]["task_id"], "task_99")
 
     def test_limit(self):
         resp = self.session.get(f"{self.base_url}/tasks?limit=10")

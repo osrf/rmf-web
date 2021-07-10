@@ -1,4 +1,5 @@
 import {
+  Button,
   Grid,
   IconButton,
   makeStyles,
@@ -9,6 +10,7 @@ import {
   Toolbar,
   Tooltip,
   Typography,
+  useTheme,
 } from '@material-ui/core';
 import {
   AddOutlined as AddOutlinedIcon,
@@ -16,12 +18,12 @@ import {
   Refresh as RefreshIcon,
 } from '@material-ui/icons';
 import { Alert, AlertProps } from '@material-ui/lab';
-import type { SubmitTask } from 'api-client';
+import { SubmitTask, Task } from 'api-client';
 import React from 'react';
+import { CreateTaskForm, CreateTaskFormProps, TaskInfo, TaskTable } from 'react-components';
 import * as RmfModels from 'rmf-models';
-import { CreateTaskForm, CreateTaskFormProps } from './create-task';
-import { TaskInfo } from './task-info';
-import { TaskTable } from './task-table';
+import { UserContext } from '../auth/contexts';
+import { Enforcer } from '../permissions';
 import { parseTasksFile } from './utils';
 
 const useStyles = makeStyles((theme) => ({
@@ -53,16 +55,11 @@ function NoSelectedTask() {
   );
 }
 
-export interface FetchTasksResult {
-  tasks: RmfModels.TaskSummary[];
-  totalCount: number;
-}
-
 export interface TaskPanelProps extends React.HTMLProps<HTMLDivElement> {
   /**
    * Should only contain the tasks of the current page.
    */
-  tasks: RmfModels.TaskSummary[];
+  tasks: Task[];
   paginationOptions?: Omit<React.ComponentPropsWithoutRef<typeof TablePagination>, 'component'>;
   cleaningZones?: string[];
   loopWaypoints?: string[];
@@ -90,35 +87,32 @@ export function TaskPanel({
   ...divProps
 }: TaskPanelProps): JSX.Element {
   const classes = useStyles();
-  const [selectedTask, setSelectedTask] = React.useState<RmfModels.TaskSummary | undefined>(
-    undefined,
-  );
+  const theme = useTheme();
+  const [selectedTask, setSelectedTask] = React.useState<Task | undefined>(undefined);
   const uploadFileInputRef = React.useRef<HTMLInputElement>(null);
   const [openCreateTaskForm, setOpenCreateTaskForm] = React.useState(false);
   const [openSnackbar, setOpenSnackbar] = React.useState(false);
   const [snackbarMessage, setSnackbarMessage] = React.useState('');
   const [snackbarSeverity, setSnackbarSeverity] = React.useState<AlertProps['severity']>('success');
   const [autoRefresh, setAutoRefresh] = React.useState(true);
+  const user = React.useContext(UserContext);
 
-  const handleCancelTask = React.useCallback(
-    async (task: RmfModels.TaskSummary) => {
-      if (!cancelTask) {
-        return;
-      }
-      try {
-        await cancelTask(task);
-        setSnackbarMessage('Successfully cancelled task');
-        setSnackbarSeverity('success');
-        setOpenSnackbar(true);
-        setSelectedTask(undefined);
-      } catch (e) {
-        setSnackbarMessage(`Failed to cancel task: ${e.message}`);
-        setSnackbarSeverity('error');
-        setOpenSnackbar(true);
-      }
-    },
-    [cancelTask],
-  );
+  const handleCancelTaskClick = React.useCallback<React.MouseEventHandler>(async () => {
+    if (!cancelTask || !selectedTask) {
+      return;
+    }
+    try {
+      await cancelTask(selectedTask.summary);
+      setSnackbarMessage('Successfully cancelled task');
+      setSnackbarSeverity('success');
+      setOpenSnackbar(true);
+      setSelectedTask(undefined);
+    } catch (e) {
+      setSnackbarMessage(`Failed to cancel task: ${e.message}`);
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+    }
+  }, [cancelTask, selectedTask]);
 
   /* istanbul ignore next */
   const tasksFromFile = (): Promise<SubmitTask[]> => {
@@ -145,6 +139,14 @@ export function TaskPanel({
 
   const autoRefreshTooltipPrefix = autoRefresh ? 'Disable' : 'Enable';
 
+  const taskCancellable =
+    selectedTask &&
+    user &&
+    Enforcer.canCancelTask(user, selectedTask) &&
+    (selectedTask.summary.state === RmfModels.TaskSummary.STATE_ACTIVE ||
+      selectedTask.summary.state === RmfModels.TaskSummary.STATE_PENDING ||
+      selectedTask.summary.state === RmfModels.TaskSummary.STATE_QUEUED);
+
   return (
     <div {...divProps}>
       <Grid container wrap="nowrap" justify="center" style={{ height: 'inherit' }}>
@@ -170,14 +172,21 @@ export function TaskPanel({
                 <RefreshIcon />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Create task">
-              <IconButton onClick={() => setOpenCreateTaskForm(true)} aria-label="Create Task">
-                <AddOutlinedIcon />
-              </IconButton>
-            </Tooltip>
+            {user && Enforcer.canSubmitTask(user) && (
+              <Tooltip title="Create task">
+                <IconButton onClick={() => setOpenCreateTaskForm(true)} aria-label="Create Task">
+                  <AddOutlinedIcon />
+                </IconButton>
+              </Tooltip>
+            )}
           </Toolbar>
           <TableContainer>
-            <TaskTable tasks={tasks} onTaskClick={(_ev, task) => setSelectedTask(task)} />
+            <TaskTable
+              tasks={tasks.map((t) => t.summary)}
+              onTaskClick={(_ev, task) =>
+                setSelectedTask(tasks.find((t) => t.task_id === task.task_id))
+              }
+            />
           </TableContainer>
           {paginationOptions && (
             <TablePagination component="div" {...paginationOptions} style={{ flex: '0 0 auto' }} />
@@ -185,10 +194,20 @@ export function TaskPanel({
         </Paper>
         <Paper className={classes.detailPanelContainer}>
           {selectedTask ? (
-            <TaskInfo
-              task={selectedTask}
-              onCancelTaskClick={() => handleCancelTask(selectedTask)}
-            />
+            <>
+              <TaskInfo task={selectedTask.summary} />
+              <Button
+                style={{ marginTop: theme.spacing(1) }}
+                fullWidth
+                variant="contained"
+                color="secondary"
+                aria-label="Cancel Task"
+                disabled={!taskCancellable}
+                onClick={handleCancelTaskClick}
+              >
+                Cancel Task
+              </Button>
+            </>
           ) : (
             <NoSelectedTask />
           )}

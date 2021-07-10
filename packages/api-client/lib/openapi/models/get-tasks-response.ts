@@ -19,7 +19,7 @@
 export interface GetTasksResponse {
   /**
    *
-   * @type {Array&lt;TaskProgress&gt;}
+   * @type {Array&lt;Task&gt;}
    * @memberof GetTasksResponse
    */
   items: any;

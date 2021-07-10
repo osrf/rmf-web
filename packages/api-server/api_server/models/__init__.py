@@ -7,3 +7,4 @@ from .ingestors import *
 from .lifts import *
 from .pagination import *
 from .tasks import *
+from .user import *

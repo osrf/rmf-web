@@ -1,13 +1,12 @@
 /* istanbul ignore file */
 
 import { makeStyles } from '@material-ui/core';
-import type { TaskProgress } from 'api-client';
+import type { Task } from 'api-client';
 import type { AxiosError } from 'axios';
 import React from 'react';
-import { TaskPanel, TaskPanelProps } from 'react-components';
-import * as RmfModels from 'rmf-models';
 import { PlacesContext, RmfIngressContext } from '../rmf-app';
 import { useAutoRefresh } from './auto-refresh';
+import { TaskPanel, TaskPanelProps } from './task-panel';
 
 const useStyles = makeStyles((theme) => ({
   taskPanel: {
@@ -48,8 +47,7 @@ export function TaskPage() {
         '-priority,-start_time',
       );
       setTotalCount(resp.data.total_count);
-      const taskProgresses: TaskProgress[] = resp.data.items;
-      return taskProgresses.map((t) => t.task_summary) as RmfModels.TaskSummary[];
+      return resp.data.items as Task[];
     },
     [tasksApi],
   );

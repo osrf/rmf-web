@@ -8,6 +8,8 @@ export default class StubAuthenticator
   readonly user: User = {
     username: 'stub',
     token: '',
+    roles: [],
+    groups: [],
   };
 
   readonly token?: string = undefined;

@@ -6,7 +6,7 @@ from rmf_fleet_msgs.msg import RobotState as RmfRobotState
 from rmf_task_msgs.msg import TaskSummary as RmfTaskSummary
 
 from ..models import tortoise_models as ttm
-from .test_fixtures import RouteFixture, try_until
+from ..test.test_fixtures import RouteFixture, try_until
 
 
 class TestFleetsRoute(RouteFixture):

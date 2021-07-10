@@ -144,7 +144,9 @@ For this example, we will
 1. Create a `rmf-web` realm.
 1. Create a `dashboard` and `reporting` client.
 1. Add https://example.com to the list of allowed origins.
-1. Create an example user with user=example password=example.
+1. Create roles for rmf-server.
+1. Create several users with different roles.
+1. Create client scopes for rmf-server and reporting-server.
 
 For brevity, you can use the provided script to automate the process.
 
@@ -368,7 +370,25 @@ If not done so already, launch the office demo
 ros2 launch rmf_demos office.launch.xml headless:=true
 ```
 
-Go to https://example.com/dashboard, if everything works, you should see a log in screen, use user=example, password=example.
+Go to https://example.com/dashboard, if everything works, you should see a log in screen, use one of the following
+
+| Username | Password |
+| --- | --- |
+| admin | admin |
+| example1 | example1 |
+| example2 | example2 |
+| example3 | example3 |
+
+These users are created to showcase the levels of authorization, they are created with the following roles/groups.
+
+```js
+const users = [
+  { username: 'admin', roles: ['_rmf_superadmin'] },
+  { username: 'example1', roles: ['rmf_group_1', '_rmf_task_submit', '_rmf_task_cancel'] },
+  { username: 'example2', roles: ['rmf_group_2', '_rmf_task_submit', '_rmf_task_cancel'] },
+  { username: 'example3', roles: ['rmf_group_1'] },
+]
+```
 
 After that, you should be presented with the dashboard, you have successfully deployed `rmf-web`! 🎉
 

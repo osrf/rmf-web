@@ -16,6 +16,8 @@ config = {
     # NOTE: This is ONLY used for documentation purposes, the "jwt_public_key" will be the
     # only key used to verify a token.
     "oidc_url": None,
+    # Client id registers in the authentication provider.
+    "client_id": "rmf-dashboard",
     # Audience the access token is meant for. Can also be an array.
     # Used to verify the "aud" claim.
     "aud": "localhost",

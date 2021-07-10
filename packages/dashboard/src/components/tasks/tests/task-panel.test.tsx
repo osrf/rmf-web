@@ -2,16 +2,18 @@ import { render, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import * as RmfModels from 'rmf-models';
-import { TaskPanel, TaskPanelProps } from '../../lib';
-import { makeTask } from '../test-data/tasks';
+import { User } from '../../../../../rmf-auth/lib';
+import { mountAsUser, superUser } from '../../tests/test-utils';
+import { TaskPanel, TaskPanelProps } from '../task-panel';
+import { makeTask } from './make-tasks';
 
 describe('TaskPanel', () => {
   describe('task detail', () => {
     const mount = async (cancelTask?: TaskPanelProps['cancelTask']) => {
       const task = makeTask('test_task', 3, 3);
-      task.task_profile.description.task_type.type = RmfModels.TaskType.TYPE_CLEAN;
-      task.task_profile.description.clean.start_waypoint = 'test_waypoint';
-      const root = render(<TaskPanel tasks={[task]} cancelTask={cancelTask} />);
+      task.summary.task_profile.description.task_type.type = RmfModels.TaskType.TYPE_CLEAN;
+      task.summary.task_profile.description.clean.start_waypoint = 'test_waypoint';
+      const root = mountAsUser(superUser, <TaskPanel tasks={[task]} cancelTask={cancelTask} />);
       userEvent.click(await root.findByText('test_task'));
       return root;
     };
@@ -34,17 +36,66 @@ describe('TaskPanel', () => {
       userEvent.click(root.getByLabelText('Cancel Task'));
       await waitFor(() => root.getByText('Failed to cancel task: test error'));
     });
+
+    it('clicking on cancel button triggers callback', async () => {
+      const cancelTask = jest.fn();
+      const root = mountAsUser(
+        superUser,
+        <TaskPanel tasks={[makeTask('task1', 1, 1)]} cancelTask={cancelTask} />,
+      );
+      userEvent.click(root.getByText('task1'));
+      userEvent.click(root.getByLabelText('Cancel Task'));
+      expect(cancelTask).toHaveBeenCalledTimes(1);
+      await waitFor(() => root.getByText('Successfully cancelled task'));
+    });
+
+    it('cancel task button is disabled for user without required permission', () => {
+      const root = mountAsUser(
+        { username: 'test2', token: '', roles: [], groups: [] },
+        <TaskPanel tasks={[makeTask('task1', 1, 1)]} />,
+      );
+      userEvent.click(root.getByText('task1'));
+      const button = root.getByLabelText('Cancel Task');
+      expect(button).toHaveClass('Mui-disabled');
+    });
+
+    it('cancel task button is disabled for completed task', () => {
+      const task = makeTask('task1', 1, 1);
+      task.summary.state = RmfModels.TaskSummary.STATE_COMPLETED;
+      const root = mountAsUser(superUser, <TaskPanel tasks={[task]} />);
+      userEvent.click(root.getByText('task1'));
+      const button = root.getByLabelText('Cancel Task');
+      expect(button).toHaveClass('Mui-disabled');
+    });
+
+    it('cancel task button is disabled for failed task', () => {
+      const task = makeTask('task1', 1, 1);
+      task.summary.state = RmfModels.TaskSummary.STATE_FAILED;
+      const root = mountAsUser(superUser, <TaskPanel tasks={[task]} />);
+      userEvent.click(root.getByText('task1'));
+      const button = root.getByLabelText('Cancel Task');
+      expect(button).toHaveClass('Mui-disabled');
+    });
+
+    it('cancel task button is disabled for cancelled task', () => {
+      const task = makeTask('task1', 1, 1);
+      task.summary.state = RmfModels.TaskSummary.STATE_CANCELED;
+      const root = mountAsUser(superUser, <TaskPanel tasks={[task]} />);
+      userEvent.click(root.getByText('task1'));
+      const button = root.getByLabelText('Cancel Task');
+      expect(button).toHaveClass('Mui-disabled');
+    });
   });
 
   describe('create task', () => {
     it('clicking on create task button opens the create task form', () => {
-      const root = render(<TaskPanel tasks={[]} />);
+      const root = mountAsUser(superUser, <TaskPanel tasks={[]} />);
       userEvent.click(root.getByLabelText('Create Task'));
       root.getByText('Create Task');
     });
 
     it('closing the create task form reset its states', () => {
-      const root = render(<TaskPanel tasks={[]} />);
+      const root = mountAsUser(superUser, <TaskPanel tasks={[]} />);
       userEvent.click(root.getByLabelText('Create Task'));
       let priorityEl = root.getByLabelText('Priority') as HTMLInputElement;
       userEvent.clear(priorityEl);
@@ -58,24 +109,31 @@ describe('TaskPanel', () => {
     });
   });
 
+  it('create task button is hidden if user cannot submit tasks', () => {
+    const user: User = { username: 'test', token: '', roles: [], groups: [] };
+    const root = mountAsUser(user, <TaskPanel tasks={[]} />);
+    const button = root.queryByLabelText('Create Task');
+    expect(button).toBe(null);
+  });
+
   it('success snackbar is shown when successfully created a task', async () => {
-    const spy = jasmine.createSpy().and.resolveTo(undefined);
-    const root = render(<TaskPanel tasks={[]} submitTasks={spy} />);
+    const spy = jest.fn(() => Promise.resolve(undefined));
+    const root = mountAsUser(superUser, <TaskPanel tasks={[]} submitTasks={spy} />);
     userEvent.click(root.getByLabelText('Create Task'));
     userEvent.click(root.getByLabelText('Submit'));
     await waitFor(() => root.getByText('Successfully created task'));
   });
 
   it('failure snackbar is shown when failed to created a task', async () => {
-    const spy = jasmine.createSpy().and.rejectWith(new Error('error!!'));
-    const root = render(<TaskPanel tasks={[]} submitTasks={spy} />);
+    const spy = jest.fn(() => Promise.reject('error!!'));
+    const root = mountAsUser(superUser, <TaskPanel tasks={[]} submitTasks={spy} />);
     userEvent.click(root.getByLabelText('Create Task'));
     userEvent.click(root.getByLabelText('Submit'));
     await waitFor(() => root.getByText('Failed to create task', { exact: false }));
   });
 
   it('pagination is shown when pagination option is provided', () => {
-    const spy = jasmine.createSpy();
+    const spy = jest.fn();
     const root = render(
       <TaskPanel
         tasks={[makeTask('test', 1, 1)]}
@@ -92,18 +150,18 @@ describe('TaskPanel', () => {
   });
 
   it('clicking on auto refresh button toggles auto refresh', () => {
-    const spy = jasmine.createSpy();
+    const spy = jest.fn();
     const root = render(<TaskPanel tasks={[]} onAutoRefresh={spy} />);
     userEvent.click(root.getByLabelText('Disable auto refresh'));
     expect(spy).toHaveBeenCalledTimes(1);
-    expect(spy.calls.mostRecent().args[0]).toBe(false);
+    expect(spy.mock.calls[0][0]).toBe(false);
     userEvent.click(root.getByLabelText('Enable auto refresh'));
     expect(spy).toHaveBeenCalledTimes(2);
-    expect(spy.calls.mostRecent().args[0]).toBe(true);
+    expect(spy.mock.calls[1][0]).toBe(true);
   });
 
   it('clicking on refresh button triggers onRefresh', () => {
-    const spy = jasmine.createSpy();
+    const spy = jest.fn();
     const root = render(<TaskPanel tasks={[]} onRefresh={spy} />);
     userEvent.click(root.getByLabelText('Refresh'));
     expect(spy).toHaveBeenCalledTimes(1);

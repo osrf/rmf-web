@@ -473,11 +473,11 @@ export function CreateTaskForm({
       try {
         setSubmitting(true);
         await submitTasks(tasks);
+        setSubmitting(false);
         onSuccess && onSuccess(tasks);
       } catch (e) {
-        onFail && onFail(e, tasks);
-      } finally {
         setSubmitting(false);
+        onFail && onFail(e, tasks);
       }
     })();
   };

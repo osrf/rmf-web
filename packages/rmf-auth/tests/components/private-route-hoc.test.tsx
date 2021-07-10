@@ -18,6 +18,8 @@ describe('PrivateRoute', () => {
     user = {
       username: 'test',
       token: '',
+      roles: [],
+      groups: [],
     };
   });
 

@@ -44,6 +44,7 @@ export * from './robot-state';
 export * from './station';
 export * from './submit-task';
 export * from './submit-task-response';
+export * from './task';
 export * from './task-description';
 export * from './task-profile';
 export * from './task-progress';

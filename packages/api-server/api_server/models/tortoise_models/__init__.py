@@ -12,4 +12,10 @@ from .health import (
 )
 from .ingestor_state import IngestorState
 from .lift_state import LiftState
-from .task_summary import TaskSummary
+from .resource import (
+    ProtectedResource,
+    ProtectedResourceModel,
+    ResourcePermission,
+    ResourcePermissionModel,
+)
+from .task_summary import TaskSummary, TaskSummaryPermission

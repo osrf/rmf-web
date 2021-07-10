@@ -24,6 +24,32 @@ export default class KeycloakAuthenticator
     this._redirectUri = redirectUri;
   }
 
+  private _getUser(): User {
+    const tokenRoles =
+      this._inst.clientId &&
+      this._inst.resourceAccess &&
+      this._inst.resourceAccess[this._inst.clientId]
+        ? this._inst.resourceAccess[this._inst.clientId].roles
+        : [];
+
+    const roles: string[] = [];
+    const groups: string[] = [];
+    tokenRoles.forEach((role) => {
+      if (role.startsWith('_rmf_')) {
+        roles.push(role);
+      } else if (role.startsWith('rmf_')) {
+        groups.push(role);
+      }
+    });
+    return {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      username: (this._inst.idTokenParsed as any).preferred_username,
+      token: this._inst.token || '',
+      roles,
+      groups,
+    };
+  }
+
   async init(): Promise<void> {
     if (this._initialized) {
       debug('already initialized');
@@ -33,11 +59,7 @@ export default class KeycloakAuthenticator
     debug('initializing authenticator');
 
     this._inst.onAuthSuccess = async () => {
-      this._user = {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        username: (this._inst.idTokenParsed as any).preferred_username,
-        token: this._inst.token || '',
-      };
+      this._user = this._getUser();
       debug('authenticated as', this._user.username);
       this.emit('userChanged', this._user);
     };
@@ -60,11 +82,7 @@ export default class KeycloakAuthenticator
       debug('token not refreshed');
     }
 
-    this._user = this._inst.tokenParsed && {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      username: (this._inst.idTokenParsed as any).preferred_username,
-      token: this._inst.token || '',
-    };
+    this._user = this._inst.tokenParsed && this._getUser();
     this._initialized = true;
   }
 
@@ -73,11 +91,7 @@ export default class KeycloakAuthenticator
     if (this._initialized) {
       const refreshed = await this._inst.updateToken(5);
       if (refreshed) {
-        this._user = {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          username: (this._inst.idTokenParsed as any).preferred_username,
-          token: this._inst.token || '',
-        };
+        this._user = this._getUser();
         this.emit('tokenRefresh', null);
       } else {
         debug('token not refreshed');
