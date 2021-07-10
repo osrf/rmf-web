@@ -330,6 +330,36 @@ deploy it
 .bin/minikube kubectl -- apply -f k8s/reporting-server.yaml
 ```
 
+### Build reporting-server-migrations image
+
+To update our reporting-server DB we will create a container with the migrations. We can build the image by running
+
+```bash
+docker build -t rmf-web/reporting-server-migrations -f docker/reporting-server-migrations.dockerfile ws/rmf-web
+```
+
+"publish" the image, in a normal deployment, you would publish this to your docker registry, since we don't have a registry in this example, we will push the image directly to minikube
+
+```bash
+docker save rmf-web/reporting-server-migrations | bash -c 'eval $(.bin/minikube docker-env) && docker load'
+```
+
+### Run migration job
+
+Once the `reporting-server` is deployed and we have the migrations, we can run the migration job. We can do that by running:
+
+```bash
+./run-reporting-sever-migrations.sh
+```
+
+this script will check if we have a reporting-server instance running, run the job, and it'll kill the job automatically when it's done.
+
+Or you can run it manually:
+
+```bash
+.bin/minikube kubectl -- apply -f k8s/jobs/run-reporting-sever-migrations.yaml
+```
+
 ## Reporting
 
 build the image
@@ -357,7 +387,7 @@ Cronjobs are jobs that run periodically on a given schedule. You can configure t
 deploy cronjobs
 
 ```bash
-.bin/minikube kubectl -- apply -f k8s/cronjobs.yaml
+.bin/minikube kubectl -- apply -f k8s/jobs/cronjobs.yaml
 ```
 
 ## Test the deployment
