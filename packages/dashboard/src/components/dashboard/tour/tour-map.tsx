@@ -23,9 +23,9 @@ const useStyles = makeStyles(() => ({
 }));
 
 export interface TourMapProps {
-  buildingMap: Readonly<RmfModels.BuildingMap>;
-  fleets: Readonly<RmfModels.FleetState[]>;
-  mapFloorLayerSorted: Readonly<string[]>;
+  buildingMap: RmfModels.BuildingMap;
+  fleets: RmfModels.FleetState[];
+  mapFloorLayerSorted: string[];
 }
 
 export default function TourMap(props: TourMapProps): React.ReactElement {

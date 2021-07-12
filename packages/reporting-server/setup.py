@@ -17,7 +17,7 @@ setup(
         "Topic :: Software Development",
     ],
     install_requires=[
-        "fastapi~=0.63.0",
+        "fastapi~=0.65.2",
         "uvicorn[standard]~=0.13.4",
         "tortoise-orm~=0.16.21",
         "pyjwt[crypto]~=2.0",
@@ -31,6 +31,7 @@ setup(
     entry_points={
         "console_scripts": [
             "reporting_server=rest_server.__main__:main",
+            "reporting_server_clean_logs=rest_server.clean_logs:main",
         ],
     },
     license="Apache License, Version 2.0",

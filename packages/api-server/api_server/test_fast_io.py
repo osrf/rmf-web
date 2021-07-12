@@ -1,6 +1,6 @@
-import concurrent.futures
 import time
 import unittest
+from concurrent import futures
 from concurrent.futures import Future
 
 import requests
@@ -68,42 +68,6 @@ class TestFastIO(unittest.TestCase):
     def test_receive_events(self):
         self.check_events("")
 
-    def test_get_endpoint_on_non_sticky_watch_returns_422(self):
-        resp = requests.get(
-            f"{self.base_url}/no_sticky/video_rental/aegis rim/available"
-        )
-        self.assertEqual(resp.status_code, 422)
-
-    def test_non_sticky_watch_does_not_send_last_event(self):
-        resp = requests.post(
-            f"{self.base_url}/no_sticky/video_rental/return_video",
-            json={"film_title": "aegis rim"},
-        )
-        self.assertEqual(resp.status_code, 200)
-
-        self.check_subscribe_success("/no_sticky")
-
-        event_fut = Future()
-        self.client.on(
-            "/no_sticky/video_rental/aegis rim/available", event_fut.set_result
-        )
-        self.assertRaises(concurrent.futures.TimeoutError, lambda: event_fut.result(1))
-        event_fut.cancel()
-
-    def test_non_sticky_watch_sends_new_events(self):
-        self.check_subscribe_success("/no_sticky")
-
-        event_fut = Future()
-        self.client.on(
-            "/no_sticky/video_rental/aegis rim/available", event_fut.set_result
-        )
-        resp = requests.post(
-            f"{self.base_url}/no_sticky/video_rental/return_video",
-            json={"film_title": "aegis rim"},
-        )
-        self.assertEqual(resp.status_code, 200)
-        event_fut.result(1)
-
     def test_receive_events_router_with_prefix(self):
         self.check_events("/router_with_prefix")
 
@@ -112,3 +76,27 @@ class TestFastIO(unittest.TestCase):
 
     def test_receive_events_router_both_prefix(self):
         self.check_events("/include_prefix/router_both_prefix")
+
+    def test_unsubscribe(self):
+        path = "/video_rental/aegis rim/available"
+
+        fut = Future()
+        self.client.on("subscribe", fut.set_result)
+        self.client.emit("subscribe", {"path": path})
+        resp = fut.result(1)
+        self.assertTrue(resp["success"])
+
+        fut = Future()
+        self.client.on("unsubscribe", fut.set_result)
+        self.client.emit("unsubscribe", {"path": path})
+        resp = fut.result(1)
+        self.assertTrue(resp["success"])
+
+        fut = Future()
+        self.client.on("subscribe", fut.set_result)
+        resp = requests.post(
+            f"{self.base_url}/video_rental/return_video",
+            json={"film_title": "aegis rim"},
+        )
+        self.assertEqual(200, resp.status_code)
+        self.assertRaises(futures.TimeoutError, lambda: fut.result(1))

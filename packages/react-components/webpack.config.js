@@ -41,8 +41,10 @@ module.exports = (options) => {
           test: /\.(tsx|ts)$/,
           loader: 'ts-loader',
           options: {
+            transpileOnly: true,
             compilerOptions: {
               sourceMap: true,
+              declaration: false,
             },
           },
         },

@@ -6,6 +6,7 @@ from typing import Coroutine, List
 
 import tortoise.transactions
 from rx.core.typing import Disposable
+from rx.subject.subject import Subject
 
 from ..models import (
     BasicHealth,
@@ -26,6 +27,11 @@ from ..models import (
 from ..models import tortoise_models as ttm
 from ..repositories import RmfRepository
 from .events import RmfEvents
+
+
+class RmfBookKeeperEvents:
+    def __init__(self):
+        self.task_summary_written = Subject()  # TaskSummary
 
 
 class RmfBookKeeper:
@@ -56,6 +62,7 @@ class RmfBookKeeper:
     ):
         self.repo = rmf_repo
         self.rmf = rmf_events
+        self.bookkeeper_events = RmfBookKeeperEvents()
         self._loop: asyncio.AbstractEventLoop = None
         self._main_logger = logger or logging.getLogger(self.__class__.__name__)
         self._pending_tasks = set()
@@ -243,6 +250,7 @@ class RmfBookKeeper:
         async def update(summary: TaskSummary):
             await ttm.TaskSummary.save_pydantic(summary)
             self._loggers.task_summary.info(summary.json())
+            self.bookkeeper_events.task_summary_written.on_next(summary)
 
         self._subscriptions.append(
             self.rmf.task_summaries.subscribe(lambda x: self._create_task(update(x)))

@@ -76,7 +76,6 @@ class LiftState(models.Model):
     motion_state: LiftMotionStateEnum = fields.CharEnumField(
         LiftMotionStateEnum, default=LiftMotionStateEnum.MOTION_STOPPED
     )
-    payload = fields.JSONField()
     current_floor = fields.CharField(max_length=20)
     session_id = fields.CharField(max_length=200)
     created = fields.DatetimeField(auto_now_add=True)

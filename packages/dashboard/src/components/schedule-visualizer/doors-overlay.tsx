@@ -1,7 +1,7 @@
-import * as RmfModels from 'rmf-models';
 import Debug from 'debug';
 import React, { useContext } from 'react';
 import { DoorMarker as DoorMarker_, DoorMarkerProps } from 'react-components';
+import * as RmfModels from 'rmf-models';
 import { viewBoxFromLeafletBounds } from '../../util/css-utils';
 import { DoorStateContext } from '../rmf-app';
 import SVGOverlay, { SVGOverlayProps } from './svg-overlay';
@@ -34,7 +34,9 @@ export const DoorsOverlay = (props: DoorsOverlayProps) => {
             key={door.name}
             onClick={handleDoorClick}
             door={door}
-            doorMode={doorsState && doorsState[door.name] && doorsState[door.name].current_mode}
+            doorMode={
+              doorsState && doorsState[door.name] && doorsState[door.name].current_mode.value
+            }
             aria-label={door.name}
             data-component="DoorMarker"
             data-testid="doorMarker"

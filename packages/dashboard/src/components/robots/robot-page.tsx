@@ -1,11 +1,9 @@
 /* istanbul ignore file */
 
 import { makeStyles } from '@material-ui/core';
-import { TaskProgress } from 'api-client';
 import React from 'react';
-import { RobotPanel, RobotPanelProps } from 'react-components';
-import * as RmfModels from 'rmf-models';
-import { FleetStateContext, RmfIngressContext } from '../rmf-app';
+import { RobotPanel, VerboseRobot } from 'react-components';
+import { RmfIngressContext } from '../rmf-app';
 
 const useStyles = makeStyles((theme) => ({
   robotPanel: {
@@ -18,47 +16,44 @@ const useStyles = makeStyles((theme) => ({
 
 export function RobotPage() {
   const classes = useStyles();
-  const { tasksApi = null } = React.useContext(RmfIngressContext) || {};
-  const fleetStates = React.useContext(FleetStateContext);
-  const fleets = React.useMemo(() => Object.values(fleetStates), [fleetStates]);
-  const fleetNames = React.useRef<string[]>([]);
-  const newFleetNames = Object.keys(fleetStates);
-  if (newFleetNames.some((fleetName) => !fleetNames.current.includes(fleetName))) {
-    fleetNames.current = newFleetNames;
-  }
-  const [robotStates, setRobotStates] = React.useState<RmfModels.RobotState[]>([]);
+  const { fleetsApi } = React.useContext(RmfIngressContext) || {};
 
-  const fetchTasks = React.useCallback<RobotPanelProps['fetchTasks']>(
-    async (limit?: number, offset?: number, robotName?: string) => {
-      if (!tasksApi) {
-        return [];
-      }
-      const resp = await tasksApi.getTasksTasksGet(
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        robotName,
-        undefined,
-        undefined,
-        undefined,
-        limit,
-        offset,
-        'start_time',
-      );
-      const taskProgresses: TaskProgress[] = resp.data.items;
-      return taskProgresses;
-    },
-    [tasksApi],
-  );
+  const [totalCount, setTotalCount] = React.useState(0);
+  const [page, setPage] = React.useState(0);
+  const [verboseRobots, setVerboseRobots] = React.useState<VerboseRobot[]>([]);
+  const fetchVerboseRobots = React.useCallback(async () => {
+    if (!fleetsApi) {
+      setTotalCount(0);
+      return [];
+    }
+    const resp = await fleetsApi?.getRobotsFleetsRobotsGet(
+      undefined,
+      undefined,
+      10,
+      page * 10,
+      'fleet_name,robot_name',
+    );
+    setTotalCount(resp.data.total_count);
+    setVerboseRobots(resp.data.items);
+    return resp.data.items;
+  }, [fleetsApi, page]);
 
   React.useEffect(() => {
-    const robotsStatesArray = fleets.flatMap((fleet, index) => {
-      return fleet.robots;
-    });
-    setRobotStates(robotsStatesArray);
-  }, [fleets]);
+    fetchVerboseRobots();
+  }, [fetchVerboseRobots]);
 
-  return <RobotPanel className={classes.robotPanel} fetchTasks={fetchTasks} robots={robotStates} />;
+  return (
+    <RobotPanel
+      className={classes.robotPanel}
+      fetchVerboseRobots={fetchVerboseRobots}
+      paginationOptions={{
+        count: totalCount,
+        rowsPerPage: 10,
+        rowsPerPageOptions: [10],
+        page,
+        onChangePage: (_ev, newPage) => setPage(newPage),
+      }}
+      verboseRobots={verboseRobots}
+    />
+  );
 }

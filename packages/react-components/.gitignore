@@ -1,5 +1,3 @@
-/lib/**/*.js
-/lib/**/*.d.ts
-/tests/**/*.d.ts
+/dist/
 lcov.info
 coverage-final.json

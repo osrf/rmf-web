@@ -12,15 +12,15 @@ import {
   Trajectory,
   TrajectoryResponse,
 } from '../../managers/robot-trajectory-manager';
+import { AppConfigContext } from '../app-contexts';
 import { FleetStateContext, RmfIngressContext } from '../rmf-app';
 import DispensersOverlay from './dispensers-overlay';
 import DoorsOverlay from './doors-overlay';
 import LiftsOverlay from './lift-overlay';
 import { NegotiationColors } from './negotiation-colors';
 import RobotTrajectoriesOverlay from './robot-trajectories-overlay';
-import RobotsOverlay from './robots-overlay';
+import RobotsOverlay, { RobotsOverlayProps } from './robots-overlay';
 import WaypointsOverlay from './waypoints-overlay';
-import { AppConfigContext } from '../app-contexts';
 
 const debug = Debug('ScheduleVisualizer');
 
@@ -46,7 +46,7 @@ export interface ScheduleVisualizerProps extends React.PropsWithChildren<{}> {
   mapFloorSort?(levels: RmfModels.Level[]): string[];
   onDoorClick?(door: RmfModels.Door): void;
   onLiftClick?(lift: RmfModels.Lift): void;
-  onRobotClick?(fleet: string, robot: RmfModels.RobotState): void;
+  onRobotClick?: RobotsOverlayProps['onRobotClick'];
   onDispenserClick?(event: React.MouseEvent, guid: string): void;
 }
 
@@ -183,37 +183,45 @@ export default function ScheduleVisualizer(props: ScheduleVisualizerProps): Reac
 
   React.useEffect(() => {
     let interval: number;
-    (async () => {
-      async function updateTrajectory() {
-        if (!curMapFloorLayer || !trajManager) {
-          return;
-        }
+    let cancel = false;
 
-        const resp = await trajManager.latestTrajectory({
-          request: 'trajectory',
-          param: {
-            map_name: curMapFloorLayer.level.name,
-            duration: trajLookahead,
-            trim: true,
-          },
-          token: authenticator.token,
-        });
+    const updateTrajectory = async () => {
+      debug('updating trajectories');
 
-        debug('set trajectories');
-        if (showTrajectories === undefined || showTrajectories) {
-          setTrajectories((prev) => ({
-            ...prev,
-            [curMapFloorLayer.level.name]: resp,
-          }));
-        } else {
-          setTrajectories({});
-        }
+      if (cancel || !curMapFloorLayer || !trajManager) {
+        return;
       }
 
-      await updateTrajectory();
-      interval = window.setInterval(updateTrajectory, trajAnimDuration);
-    })();
-    return () => clearInterval(interval);
+      const resp = await trajManager.latestTrajectory({
+        request: 'trajectory',
+        param: {
+          map_name: curMapFloorLayer.level.name,
+          duration: trajLookahead,
+          trim: true,
+        },
+        token: authenticator.token,
+      });
+
+      debug('set trajectories');
+      if (showTrajectories === undefined || showTrajectories) {
+        setTrajectories((prev) => ({
+          ...prev,
+          [curMapFloorLayer.level.name]: resp,
+        }));
+      } else {
+        setTrajectories({});
+      }
+    };
+
+    updateTrajectory();
+    interval = window.setInterval(updateTrajectory, trajAnimDuration);
+    debug(`created trajectory update interval ${interval}`);
+
+    return () => {
+      cancel = true;
+      clearInterval(interval);
+      debug(`cleared interval ${interval}`);
+    };
   }, [trajManager, curMapFloorLayer, trajAnimDuration, showTrajectories, authenticator.token]);
 
   function handleBaseLayerChange(e: L.LayersControlEvent): void {

@@ -37,7 +37,6 @@ const AllLogsReport = () => {
           },
         },
       );
-      console.log(response);
       const labelsData = response.data as string[];
       const labels: { label: string; value: string }[] = [];
       labelsData.forEach((element) => {

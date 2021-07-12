@@ -17,7 +17,6 @@ class RawLog(models.Model):
     id = fields.IntField(pk=True)
     # JSONField https://tortoise-orm.readthedocs.io/en/latest/fields.html#tortoise.fields.data.IntField.field_type
     level: LogLevel = fields.CharEnumField(LogLevel, default=LogLevel.INFO)
-    payload = fields.JSONField()
     message = fields.TextField()
     created = fields.DatetimeField(auto_now_add=True)
     container_name = fields.TextField(null=True)

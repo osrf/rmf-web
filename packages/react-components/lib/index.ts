@@ -12,6 +12,7 @@ export * from './dispensers';
 export * from './doors';
 export * from './error-overlay';
 export * from './error-pages';
+export * from './form-inputs';
 export * from './geometry-utils';
 export * from './header-bar';
 export * from './lifts';

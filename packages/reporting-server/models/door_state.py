@@ -34,7 +34,6 @@ class DoorState(models.Model):
     state: DoorStateEnum = fields.CharEnumField(
         DoorStateEnum, default=DoorStateEnum.UNKNOWN
     )
-    payload = fields.JSONField()
     name = fields.CharField(max_length=200)
     created = fields.DatetimeField(auto_now_add=True)
 

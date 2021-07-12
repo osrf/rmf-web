@@ -1,6 +1,10 @@
+# conflicts with isort because of local non-relative import
+# pylint: disable=wrong-import-order
+
 import unittest
 
 from fastapi.testclient import TestClient
+from rest_server.__mocks__.raw_data import mock_keycloak_login_error
 from tortoise import Tortoise
 
 from ..app import get_app
@@ -110,13 +114,7 @@ class TestKeycloakRoute(unittest.IsolatedAsyncioTestCase):
         self.client = TestClient(app)
         response = self.client.post(
             "/log/keycloak/",
-            json=[
-                {"log343": "test"},
-                {
-                    "log": '[0m[0m20:41:54,721 INFO  [org.keycloak.events] (default task-2) JSON_EVENT::{"type":"LOGIN_ERROR","realmId":"579ce396-83c7-4094-964d-7ea07553089f","clientId":"reporting","ipAddress":"192.168.49.1","error":"user_not_found","auth_method":"openid-connect","auth_type":"code","redirect_uri":"https://example.com/reporting","code_id":"f813403c-2732-4062-9911-cf65b89a2278","username":"test"}',
-                    "stream": "stdout",
-                },
-            ],
+            json=[{"log343": "test"}, mock_keycloak_login_error],
         )
 
         assert response.status_code == 503

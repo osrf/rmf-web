@@ -49,6 +49,7 @@ class RouteFixture(unittest.TestCase):
         retry = Retry(total=5, backoff_factor=0.1)
         adapter = requests.adapters.HTTPAdapter(max_retries=retry)
         cls.session = requests.Session()
+        cls.session.headers["Content-Type"] = "application/json"
         cls.session.mount("http://", adapter)
 
         cls.rcl_ctx = rclpy.Context()

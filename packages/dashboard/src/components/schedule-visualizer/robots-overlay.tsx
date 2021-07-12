@@ -1,7 +1,7 @@
-import * as RmfModels from 'rmf-models';
 import Debug from 'debug';
 import React, { useMemo } from 'react';
 import { RobotMarker as RobotMarker_, RobotMarkerProps } from 'react-components';
+import * as RmfModels from 'rmf-models';
 import { viewBoxFromLeafletBounds } from '../../util/css-utils';
 import { ResourcesContext } from '../app-contexts';
 import SVGOverlay, { SVGOverlayProps } from './svg-overlay';
@@ -10,10 +10,10 @@ const debug = Debug('ScheduleVisualizer:RobotsOverlay');
 const RobotMarker = React.memo(RobotMarker_);
 
 export interface RobotsOverlayProps extends SVGOverlayProps {
-  fleets: readonly RmfModels.FleetState[];
-  onRobotClick?(fleet: string, robot: RmfModels.RobotState): void;
+  fleets: RmfModels.FleetState[];
   conflictRobotNames: string[][];
   currentFloorName: string;
+  onRobotClick?: RobotMarkerProps['onClick'];
   MarkerComponent?: React.ComponentType<RobotMarkerProps>;
 }
 
@@ -22,9 +22,9 @@ export const RobotsOverlay = (props: RobotsOverlayProps) => {
 
   const {
     fleets,
-    onRobotClick,
     conflictRobotNames,
     currentFloorName,
+    onRobotClick,
     MarkerComponent = RobotMarker,
     ...otherProps
   } = props;
@@ -60,11 +60,6 @@ export const RobotsOverlay = (props: RobotsOverlayProps) => {
     }));
   }, [fleets, currentFloorName]);
 
-  const handleRobotClick = React.useCallback<Required<RobotMarkerProps>['onClick']>(
-    (_, fleetName, robot) => onRobotClick && onRobotClick(fleetName, robot),
-    [onRobotClick],
-  );
-
   const getIconPath = React.useCallback(
     (fleet: string, robot: RmfModels.RobotState) => {
       const icon = robotResourcesContext?.getIconPath(fleet, robot.model);
@@ -80,12 +75,17 @@ export const RobotsOverlay = (props: RobotsOverlayProps) => {
           robots.map((robot) => (
             <MarkerComponent
               key={robot.name}
-              robot={robot}
+              name={robot.name}
+              model={robot.model}
+              // Round to 2 decimal places (1cm) to prevent extra rendering when robot is idle
+              x={Math.round(robot.location.x * 100) / 100}
+              y={Math.round(robot.location.y * 100) / 100}
+              yaw={Math.round(robot.location.yaw * 100) / 100}
               fleetName={fleetContainer[`${robot.name}_${robot.model}`]}
               footprint={footprint}
               variant={inConflict(robot.name) ? 'inConflict' : 'normal'}
               iconPath={getIconPath(fleet, robot)}
-              onClick={handleRobotClick}
+              onClick={onRobotClick}
               aria-label={robot.name}
               data-component="RobotMarker"
               data-testid="robotMarker"

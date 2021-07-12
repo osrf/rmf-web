@@ -71,9 +71,9 @@ export function RobotInfo({ robot }: RobotInfoProps): JSX.Element {
   }
 
   function assignedTasksToStr(robot: VerboseRobot): string {
-    return robot.assignedTasks
+    return robot.tasks
       .map((task, index) => {
-        if (index != robot.assignedTasks.length - 1) {
+        if (index !== robot.tasks.length - 1) {
           return task.task_summary.task_id.concat(' → ');
         } else {
           return task.task_summary.task_id;
@@ -89,19 +89,8 @@ export function RobotInfo({ robot }: RobotInfoProps): JSX.Element {
       RmfModels.TaskSummary.STATE_FAILED,
     ];
 
-    if (robot.assignedTasks.length > 0) {
-      const tasks = robot.assignedTasks;
-      let isActive: boolean = false;
-      for (let i = 0; i < tasks.length; i++) {
-        if (tasks[i].progress !== '0%') {
-          isActive = true;
-          setCurrentTask(robot.assignedTasks[i]);
-          break;
-        }
-      }
-
-      if (!isActive) setCurrentTask(robot.assignedTasks[0]);
-
+    if (robot.tasks.length > 0) {
+      setCurrentTask(robot.tasks[0]);
       if (currentTask) {
         setHasConcreteEndTime(concreteTasks.includes(currentTask.task_summary.state));
       }
@@ -134,7 +123,7 @@ export function RobotInfo({ robot }: RobotInfoProps): JSX.Element {
           </Typography>
         </Grid>
         <Grid item xs={12}>
-          <LinearProgressBar value={robot.battery_percent} />
+          <LinearProgressBar value={robot.state.battery_percent} />
         </Grid>
         <Grid container item xs={12} justify="center">
           <Typography variant="h6" gutterBottom>

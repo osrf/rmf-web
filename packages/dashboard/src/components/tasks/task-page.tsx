@@ -5,7 +5,9 @@ import type { TaskProgress } from 'api-client';
 import type { AxiosError } from 'axios';
 import React from 'react';
 import { TaskPanel, TaskPanelProps } from 'react-components';
+import * as RmfModels from 'rmf-models';
 import { PlacesContext, RmfIngressContext } from '../rmf-app';
+import { useAutoRefresh } from './auto-refresh';
 
 const useStyles = makeStyles((theme) => ({
   taskPanel: {
@@ -18,46 +20,18 @@ const useStyles = makeStyles((theme) => ({
 
 export function TaskPage() {
   const classes = useStyles();
-  const { tasksApi = null } = React.useContext(RmfIngressContext) || {};
+  const { tasksApi, sioClient } = React.useContext(RmfIngressContext) || {};
+  const [autoRefreshState, autoRefreshDispatcher] = useAutoRefresh(sioClient);
+  const [page, setPage] = React.useState(0);
+  const [totalCount, setTotalCount] = React.useState(0);
   const places = React.useContext(PlacesContext);
+  const placeNames = places.map((p) => p.vertex.name);
 
-  // Note: This is replaced by filetered waypoints below
-  // const placeNames = places.map((p) => p.vertex.name);
-
-  const clean_zones = Object.values(places).reduce<string[]>((place, it) => {
-    for (const param of it.vertex.params) {
-      if (param.name === 'is_cleaning_zone' && param.value_bool) {
-        place.push(it.vertex.name);
-        break;
-      }
-    }
-    return place;
-  }, []);
-
-  // TODO should retain workcell name, and parse it to TaskPanel
-  const delivery_places = Object.values(places).reduce<string[]>((place, it) => {
-    const param_names = it.vertex.params.map((param) => param.name);
-    if (param_names.includes('pickup_dispenser') || param_names.includes('dropoff_ingestor'))
-      place.push(it.vertex.name);
-    return place;
-  }, []);
-
-  // TODO This is custom to the throwaway demo. We are not showing any
-  // charging waypoints and cleaning waypoints on loop request. dock_name is valid
-  // for charging and cleaning waypoints
-  const loop_places = Object.values(places).reduce<string[]>((place, it) => {
-    const param_names = it.vertex.params.map((param) => param.name);
-    if (!param_names.includes('dock_name')) place.push(it.vertex.name);
-    return place;
-  }, []);
-
-  const fetchTasks = React.useCallback<TaskPanelProps['fetchTasks']>(
-    async (limit: number, offset: number) => {
+  const fetchTasks = React.useCallback(
+    async (page: number) => {
       if (!tasksApi) {
-        return {
-          tasks: [],
-          totalCount: 0,
-        };
+        setTotalCount(0);
+        return [];
       }
       const resp = await tasksApi.getTasksTasksGet(
         undefined,
@@ -69,30 +43,34 @@ export function TaskPage() {
         undefined,
         undefined,
         undefined,
-        limit,
-        offset,
+        10,
+        page * 10,
         'state,-priority,-start_time',
       );
+      setTotalCount(resp.data.total_count);
       const taskProgresses: TaskProgress[] = resp.data.items;
-      const task_summaries = taskProgresses.map((t) => t.task_summary);
-      return {
-        tasks: task_summaries,
-        totalCount: resp.data.total_count,
-      };
+      return taskProgresses.map((t) => t.task_summary) as RmfModels.TaskSummary[];
     },
     [tasksApi],
   );
+
+  const handleRefresh = React.useCallback<Required<TaskPanelProps>['onRefresh']>(async () => {
+    autoRefreshDispatcher.setTasks(await fetchTasks(page));
+  }, [fetchTasks, page, autoRefreshDispatcher]);
+
+  React.useEffect(() => {
+    handleRefresh();
+  }, [handleRefresh]);
 
   const submitTasks = React.useCallback<Required<TaskPanelProps>['submitTasks']>(
     async (tasks) => {
       if (!tasksApi) {
         throw new Error('tasks api not available');
       }
-      for (const t of tasks) {
-        await tasksApi.submitTaskTasksSubmitTaskPost(t);
-      }
+      await Promise.all(tasks.map((t) => tasksApi.submitTaskTasksSubmitTaskPost(t)));
+      handleRefresh();
     },
-    [tasksApi],
+    [tasksApi, handleRefresh],
   );
 
   const cancelTask = React.useCallback<Required<TaskPanelProps>['cancelTask']>(
@@ -118,12 +96,21 @@ export function TaskPage() {
   return (
     <TaskPanel
       className={classes.taskPanel}
-      fetchTasks={fetchTasks}
-      cleaningZones={clean_zones}
-      loopWaypoints={loop_places}
-      deliveryWaypoints={delivery_places}
+      tasks={autoRefreshState.tasks}
+      paginationOptions={{
+        page,
+        count: totalCount,
+        rowsPerPage: 10,
+        rowsPerPageOptions: [10],
+        onChangePage: (_ev, newPage) => setPage(newPage),
+      }}
+      cleaningZones={placeNames}
+      loopWaypoints={placeNames}
+      deliveryWaypoints={placeNames}
       submitTasks={submitTasks}
       cancelTask={cancelTask}
+      onRefresh={handleRefresh}
+      onAutoRefresh={autoRefreshDispatcher.setEnabled}
     />
   );
 }

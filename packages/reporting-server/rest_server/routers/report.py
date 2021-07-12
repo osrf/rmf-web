@@ -9,6 +9,7 @@ from models.health import HealthStatus_Pydantic
 from models.ingestor_state import IngestorState_Pydantic
 from models.lift_state import LiftState_Pydantic
 from models.raw_log import RawLog_Pydantic
+from models.task_summary import TaskSummary_Pydantic
 from rest_server.repositories.report import (
     get_all_raw_logs,
     get_containers,
@@ -18,6 +19,7 @@ from rest_server.repositories.report import (
     get_health,
     get_ingestor_state,
     get_lift_state,
+    get_task_summary,
 )
 from rest_server.repositories.report.auth_event_report import (
     get_user_login_failure_report,
@@ -106,7 +108,9 @@ async def ingestor_state_report(
     return await get_ingestor_state(offset, limit, toLogDate, fromLogDate)
 
 
-@router.get("/lift_state/", tags=["raw_logs"], response_model=List[LiftState_Pydantic])
+@router.get(
+    "/lift_state/", tags=["lift_state"], response_model=List[LiftState_Pydantic]
+)
 async def lift_state_report(
     toLogDate: Optional[str] = None,
     fromLogDate: Optional[str] = None,
@@ -126,6 +130,19 @@ async def health_report(
 ):
 
     return await get_health(offset, limit, toLogDate, fromLogDate)
+
+
+@router.get(
+    "/task_summary/", tags=["task_summary"], response_model=List[TaskSummary_Pydantic]
+)
+async def task_report(
+    toLogDate: Optional[str] = None,
+    fromLogDate: Optional[str] = None,
+    offset: Optional[int] = 0,
+    limit: Optional[int] = LIMIT,
+):
+
+    return await get_task_summary(offset, limit, toLogDate, fromLogDate)
 
 
 @router.get(

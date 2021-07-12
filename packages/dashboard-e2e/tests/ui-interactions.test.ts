@@ -102,12 +102,10 @@ describe('ui interactions', () => {
     $('#start-location').setValue('coe');
     $('#finish-location').setValue('pantry');
 
-    browser.waitUntil(
-      () => {
-        $('button[aria-label="Submit"]').click();
-        return $('div=Successfully created task').isDisplayed();
-      },
-      { timeout: 5000, interval: 500 },
-    );
-  });
+    $('button[aria-label="Submit"]').click();
+    browser.waitUntil(() => $('div=Successfully created task').isDisplayed(), {
+      timeout: 15000,
+      interval: 500,
+    });
+  }).timeout(20000);
 });

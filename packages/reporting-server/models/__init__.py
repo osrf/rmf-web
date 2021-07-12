@@ -6,3 +6,4 @@ from .health import HealthStatus
 from .ingestor_state import IngestorState
 from .lift_state import LiftState
 from .raw_log import RawLog
+from .task_summary import TaskSummary

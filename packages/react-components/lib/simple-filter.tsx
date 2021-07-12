@@ -1,6 +1,7 @@
 import React from 'react';
 import { TextField, makeStyles, Divider } from '@material-ui/core';
 
+// FIXME: This is likely to cause naming clashes
 export interface OnChangeEvent {
   name?: string | undefined;
   value: string;

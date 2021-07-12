@@ -178,7 +178,7 @@ export const LiftMarker = React.forwardRef(function (
         </g>
         <g>
           {doors.map((door, i) => (
-            <DoorMarker key={i} door={door} doorMode={doorMode} translate={true} />
+            <DoorMarker key={i} door={door} doorMode={doorMode?.value} translate={true} />
           ))}
         </g>
       </g>

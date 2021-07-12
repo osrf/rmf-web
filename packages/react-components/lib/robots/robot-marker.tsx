@@ -38,7 +38,11 @@ export const RobotMarker = React.forwardRef(
   (props: RobotMarkerProps, ref: React.Ref<SVGGElement>) => {
     // some props are not used but have to be declared to correctly set `otherProps`
     const {
-      robot,
+      name,
+      model,
+      x,
+      y,
+      yaw: rmfYaw,
       footprint,
       fleetName,
       iconPath,
@@ -48,13 +52,13 @@ export const RobotMarker = React.forwardRef(
       onClick,
       ...otherProps
     } = props;
-    debug(`render ${robot.name}`);
+    debug(`render ${name}`);
     const [useImageMarker, setUseImageMarker] = React.useState(!!iconPath);
     const [robotColor, setRobotColor] = React.useState<string | undefined>(undefined);
     const colorManager = React.useContext(ColorContext);
     const classes = useStyles();
-    const pos = fromRmfCoords([robot.location.x, robot.location.y]);
-    const yaw = (fromRmfYaw(robot.location.yaw) / Math.PI) * 180;
+    const pos = fromRmfCoords([x, y]);
+    const yaw = (fromRmfYaw(rmfYaw) / Math.PI) * 180;
 
     const translateTransform = translate ? `translate(${pos[0]} ${pos[1]})` : undefined;
 
@@ -70,15 +74,15 @@ export const RobotMarker = React.forwardRef(
         return;
       }
       (async () => {
-        const color = await colorManager.robotPrimaryColor(fleetName, robot.name, robot.model);
+        const color = await colorManager.robotPrimaryColor(fleetName, name, model);
         isMounted.current && setRobotColor(color);
       })();
-    }, [colorManager, fleetName, robot.model, robot.name, useImageMarker]);
+    }, [name, model, colorManager, fleetName, useImageMarker]);
 
     return (
-      <g ref={ref} onClick={(ev) => onClick && onClick(ev, fleetName, robot)} {...otherProps}>
+      <g ref={ref} onClick={(ev) => onClick && onClick(ev, fleetName, name)} {...otherProps}>
         <g transform={translateTransform}>
-          <g className={classes.clickable} aria-label={robot.name} transform={`rotate(${yaw})`}>
+          <g className={classes.clickable} aria-label={name} transform={`rotate(${yaw})`}>
             {useImageMarker && iconPath ? (
               <ImageMarker
                 {...props}
@@ -89,7 +93,7 @@ export const RobotMarker = React.forwardRef(
               <DefaultMarker color={robotColor} {...props} />
             ) : null}
           </g>
-          <SvgText text={robot.name} targetWidth={footprint * 1.9} className={classes.text} />
+          <SvgText text={name} targetWidth={footprint * 1.9} className={classes.text} />
         </g>
       </g>
     );

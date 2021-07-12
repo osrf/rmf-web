@@ -34,14 +34,14 @@ const useDoorStyles = makeStyles({
   },
 });
 
-function useDoorStyle(doorMode?: RmfModels.DoorMode): string {
+function useDoorStyle(doorMode?: number): string {
   const classes = useDoorStyles();
 
-  if (!doorMode) {
+  if (doorMode === undefined) {
     return classes.unknown;
   }
 
-  switch (doorMode.value) {
+  switch (doorMode) {
     case RmfModels.DoorMode.MODE_OPEN:
       return classes.open;
     case RmfModels.DoorMode.MODE_MOVING:
@@ -209,7 +209,7 @@ const DoubleTelescopeDoor = DoubleSlidingDoor;
  */
 export interface DoorMarkerProps extends Omit<React.SVGProps<SVGGElement>, 'onClick'> {
   door: RmfModels.Door;
-  doorMode?: RmfModels.DoorMode;
+  doorMode?: number;
   /**
    * Whether the component should perform a translate transform to put it inline with the position
    * in RMF.

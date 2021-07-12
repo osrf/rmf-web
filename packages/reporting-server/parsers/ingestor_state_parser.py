@@ -9,6 +9,5 @@ async def ingestor_state_parser(fullstring: str):
 
     return {
         "state": IngestorState.service.get_state_name(state_json["mode"]),
-        "payload": modified_string,
         "guid": state_json["guid"],
     }

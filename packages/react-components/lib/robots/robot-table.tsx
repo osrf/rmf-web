@@ -16,11 +16,8 @@ import {
 import { Refresh as RefreshIcon } from '@material-ui/icons';
 import clsx from 'clsx';
 import React from 'react';
-import * as RmfModels from 'rmf-models';
 import { taskTypeToStr } from '../tasks/utils';
 import { robotModeToString, VerboseRobot } from './utils';
-import { PaginationOptions } from '../tasks/task-table';
-import { TaskProgress } from 'api-client';
 
 const useStyles = makeStyles((theme) => ({
   table: {
@@ -46,7 +43,7 @@ interface RobotRowProps {
 }
 
 const returnLocationCells = (robot: VerboseRobot) => {
-  const taskDescription = robot.assignedTasks[0].task_summary.task_profile.description;
+  const taskDescription = robot.tasks[0].task_summary.task_profile.description;
   switch (taskTypeToStr(taskDescription.task_type.type)) {
     case 'Loop':
       return (
@@ -65,7 +62,7 @@ const returnLocationCells = (robot: VerboseRobot) => {
     case 'Clean':
       return (
         <>
-          <TableCell>-</TableCell>
+          <TableCell>NA</TableCell>
           <TableCell>{taskDescription.clean.start_waypoint}</TableCell>
         </>
       );
@@ -83,7 +80,7 @@ function RobotRow({ robot, onClick }: RobotRowProps) {
   const classes = useStyles();
   const [hover, setHover] = React.useState(false);
 
-  if (robot.assignedTasks.length == 0) {
+  if (robot.tasks.length === 0) {
     return (
       <>
         <TableRow
@@ -96,8 +93,8 @@ function RobotRow({ robot, onClick }: RobotRowProps) {
           <TableCell>{'-'}</TableCell>
           <TableCell>{'-'}</TableCell>
           <TableCell>{'-'}</TableCell>
-          <TableCell>{robot.battery_percent.toFixed(2)}%</TableCell>
-          <TableCell>{robotModeToString(robot.mode)}</TableCell>
+          <TableCell>{Math.round(robot.state.battery_percent)}%</TableCell>
+          <TableCell>{robotModeToString(robot.state.mode)}</TableCell>
         </TableRow>
       </>
     );
@@ -113,41 +110,43 @@ function RobotRow({ robot, onClick }: RobotRowProps) {
           <TableCell>{robot.name}</TableCell>
           {returnLocationCells(robot)}
           <TableCell>
-            {robot.assignedTasks
+            {robot.tasks
               ? `${
-                  robot.assignedTasks[0].task_summary.end_time.sec -
-                  robot.assignedTasks[0].task_summary.start_time.sec
+                  robot.tasks[0].task_summary.end_time.sec -
+                  robot.tasks[0].task_summary.start_time.sec
                 }s`
               : '-'}
           </TableCell>
-          <TableCell>{robot.battery_percent.toFixed(2)}%</TableCell>
-          <TableCell>{robotModeToString(robot.mode)}</TableCell>
+          <TableCell>{Math.round(robot.state.battery_percent)}%</TableCell>
+          <TableCell>{robotModeToString(robot.state.mode)}</TableCell>
         </TableRow>
       </>
     );
   }
 }
 
+export type PaginationOptions = Omit<
+  React.ComponentPropsWithoutRef<typeof TablePagination>,
+  'component'
+>;
+
 export interface RobotTableProps extends PaperProps {
   /**
    * The current list of robots to display, when pagination is enabled, this should only
    * contain the robots for the current page.
    */
-  tasks: TaskProgress[];
-  robots: RmfModels.RobotState[];
+  robots: VerboseRobot[];
   paginationOptions?: PaginationOptions;
-  robotsWithTasks?: VerboseRobot[];
-  onRefreshTasks?: (limt?: number, offset?: number, robotName?: string) => void;
-  onRobotClickAndRefresh?(robot: VerboseRobot, ev?: React.MouseEvent<HTMLDivElement>): void;
+  onRefreshClick?: React.MouseEventHandler<HTMLButtonElement>;
+  // onRobotClickAndRefresh?(robot: VerboseRobot, ev?: React.MouseEvent<HTMLDivElement>): void;
+  onRobotClick?(ev: React.MouseEvent<HTMLDivElement>, robot: VerboseRobot): void;
 }
 
 export function RobotTable({
-  tasks,
   robots,
   paginationOptions,
-  robotsWithTasks,
-  onRefreshTasks,
-  onRobotClickAndRefresh,
+  onRefreshClick,
+  onRobotClick,
   ...paperProps
 }: RobotTableProps): JSX.Element {
   const classes = useStyles();
@@ -158,12 +157,7 @@ export function RobotTable({
         <Typography className={classes.title} variant="h6">
           Robots
         </Typography>
-        <IconButton
-          onClick={() => {
-            onRefreshTasks;
-          }}
-          aria-label="Refresh"
-        >
+        <IconButton onClick={onRefreshClick} aria-label="Refresh">
           <RefreshIcon />
         </IconButton>
       </Toolbar>
@@ -180,13 +174,13 @@ export function RobotTable({
             </TableRow>
           </TableHead>
           <TableBody>
-            {robotsWithTasks &&
-              robotsWithTasks.map((robot, robot_id) => (
+            {robots &&
+              robots.map((robot, robot_id) => (
                 <RobotRow
                   key={robot_id}
                   robot={robot}
                   onClick={(ev) => {
-                    onRobotClickAndRefresh && onRobotClickAndRefresh(robot, ev);
+                    onRobotClick && onRobotClick(ev, robot);
                   }}
                 />
               ))}

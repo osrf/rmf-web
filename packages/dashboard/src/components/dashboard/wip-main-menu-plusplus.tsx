@@ -1,9 +1,7 @@
 import { Button, Divider, makeStyles, Typography } from '@material-ui/core';
-import * as RmfModels from 'rmf-models';
 import Debug from 'debug';
 import React from 'react';
 import {
-  DashboardTooltip,
   Notification,
   RobotSummaryState,
   SystemSummaryAlert,
@@ -11,7 +9,9 @@ import {
   SystemSummaryItemState,
   SystemSummarySpoiltItems,
   SystemSummaryTaskState,
+  Tooltip,
 } from 'react-components';
+import * as RmfModels from 'rmf-models';
 import { HealthStatus } from '../../managers/rmf-health-state-manager';
 import { TooltipsContext } from '../app-contexts';
 import { RmfHealthContext } from '../rmf-app';
@@ -168,22 +168,22 @@ export const MainMenu = React.memo((props: MainMenuProps) => {
           variant="contained"
           onClick={handleMainMenuNegotiationsClick}
         >
-          <DashboardTooltip
+          <Tooltip
             title="This panel shows the negotiations between robots when there are conflicts in trajectories"
             id="negotiations-tooltip"
             enabled={showTooltips}
           >
             <Typography variant="body1">Negotiations</Typography>
-          </DashboardTooltip>
+          </Tooltip>
         </Button>
         <Button color="primary" className={classes.buttons} variant="contained">
-          <DashboardTooltip
+          <Tooltip
             title="This panel shows the plans of robots that has received instructions to perform a task"
             id="plans-tooltip"
             enabled={showTooltips}
           >
             <Typography variant="body1">Plans</Typography>
-          </DashboardTooltip>
+          </Tooltip>
         </Button>
         <Divider className={classes.divider} />
       </div>

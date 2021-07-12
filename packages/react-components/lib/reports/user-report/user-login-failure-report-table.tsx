@@ -8,7 +8,6 @@ import { format } from 'date-fns';
 export type UserLoginFailureRowsType = {
   created: string; //date
   ip_address: string;
-  payload: string | unknown;
   client_id: string;
   username: string;
   error: string;

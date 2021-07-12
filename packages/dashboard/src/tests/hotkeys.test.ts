@@ -1,5 +1,5 @@
-import { act, HookResult, renderHook } from '@testing-library/react-hooks';
-import { useStackNavigator, StackNavigatorDispatch } from 'react-components';
+import { act, renderHook, RenderResult } from '@testing-library/react-hooks';
+import { StackNavigatorDispatch, useStackNavigator } from 'react-components';
 import { HotKeysEnabledProps } from 'react-hotkeys';
 import { AppController } from '../components/app-contexts';
 import { dashboardInitialValues, OmniPanelViewIndex } from '../components/dashboard/dashboard';
@@ -27,8 +27,8 @@ test('build hotkeys on the correct format', () => {
 
 describe('update states correctly', () => {
   let hotkeys: HotKeysEnabledProps;
-  let result: HookResult<ReducerDashboardProps>;
-  let viewResult: HookResult<[OmniPanelViewIndex[], StackNavigatorDispatch<OmniPanelViewIndex>]>;
+  let result: RenderResult<ReducerDashboardProps>;
+  let viewResult: RenderResult<[OmniPanelViewIndex[], StackNavigatorDispatch<OmniPanelViewIndex>]>;
   let appController: AppController;
 
   beforeEach(() => {

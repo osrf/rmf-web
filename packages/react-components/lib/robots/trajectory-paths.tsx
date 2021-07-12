@@ -98,8 +98,16 @@ export const FollowAnimationPath = (props: TrajectoryPathProps): JSX.Element => 
 
     const offsets = keyframeOffsets(trajectory);
     const pathAnim = pathRef.current;
+
+    // Idle robots still have a trajectory with a path length of 0. This prevents a divide
+    // by 0 error.
+    const totalLength = pathAnim.getTotalLength();
+    if (totalLength < 0.01) {
+      return;
+    }
+
     const strokeWidth = Number(pathAnim.getAttribute('stroke-width') || 1);
-    const strokeDash = strokeWidth / pathAnim.getTotalLength();
+    const strokeDash = strokeWidth / totalLength;
     pathAnim.setAttribute('stroke-dasharray', `${strokeDash} ${2 - strokeDash}`);
 
     pathAnim.animate(

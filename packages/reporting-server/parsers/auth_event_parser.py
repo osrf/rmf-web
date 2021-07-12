@@ -13,5 +13,4 @@ async def auth_event_parser(fullstring: str):
         "realm_id": state_json.get("realmId", None),
         "client_id": state_json.get("clientId", None),
         "ip_address": state_json["ipAddress"],
-        "payload": modified_string,
     }

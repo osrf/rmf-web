@@ -1,7 +1,7 @@
 import { Divider, List, ListItem, makeStyles, Typography } from '@material-ui/core';
 import Debug from 'debug';
 import React from 'react';
-import DashboardTooltip from 'react-components/lib/tooltip';
+import { Tooltip } from 'react-components';
 import { TooltipsContext } from '../app-contexts';
 import { OmniPanelViewIndex } from './dashboard';
 
@@ -76,13 +76,13 @@ export const MainMenu = React.memo((props: MainMenuProps) => {
       <Divider />
 
       <ListItem data-item="Negotiations" button={true} onClick={handleMainMenuNegotiationsClick}>
-        <DashboardTooltip
+        <Tooltip
           title="This panel shows the negotiations between robots when there are conflicts in trajectories"
           id="negotiations-tooltip"
           enabled={showTooltips}
         >
           <Typography variant="h5">Negotiations</Typography>
-        </DashboardTooltip>
+        </Tooltip>
       </ListItem>
       <Divider />
     </List>

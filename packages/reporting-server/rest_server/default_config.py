@@ -25,4 +25,6 @@ config = {
     # Used to verify the "iss" claim
     # If iss is set to None, it means that authentication should be disabled
     "iss": None,
+    # Number of days to store logs
+    "log_storage_time": 7,
 }

@@ -11,7 +11,6 @@ class AuthEvents(models.Model):
     realm_id = fields.CharField(max_length=100, null=True)
     client_id = fields.CharField(max_length=100, null=True)
     ip_address = fields.CharField(max_length=50, null=True)
-    payload = fields.JSONField()
     created = fields.DatetimeField(auto_now_add=True)
 
     def __str__(self):

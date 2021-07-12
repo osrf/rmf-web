@@ -32,6 +32,7 @@ import {
   RmfIngressContext,
 } from '../rmf-app';
 import ScheduleVisualizer, { ScheduleVisualizerProps } from '../schedule-visualizer';
+import { RobotsOverlayProps } from '../schedule-visualizer/robots-overlay';
 import { SpotlightValue } from '../spotlight-value';
 import MainMenu from './main-menu';
 import NegotiationsPanel from './negotiations-panel';
@@ -93,9 +94,11 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-function robotKey(fleet: string, robot: RmfModels.RobotState): string {
-  return `${fleet}-${robot.name}`;
+function robotKey(fleet: string, robotName: string): string {
+  return `${fleet}-${robotName}`;
 }
+
+const initialStack = [OmniPanelViewIndex.MainMenu];
 
 export default function Dashboard(_props: {}): React.ReactElement {
   debug('render');
@@ -112,7 +115,7 @@ export default function Dashboard(_props: {}): React.ReactElement {
   );
 
   const [viewStack, viewStackDispatch] = useStackNavigator<OmniPanelViewIndex>(
-    [OmniPanelViewIndex.MainMenu],
+    initialStack,
     OmniPanelViewIndex.MainMenu,
   );
   const currentView = viewStack[viewStack.length - 1];
@@ -211,8 +214,8 @@ export default function Dashboard(_props: {}): React.ReactElement {
     fleetNames.current = newFleetNames;
   }
   const robotAccordionRefs = React.useMemo(() => defaultDict(createSpotlightRef), []);
-  const handleRobotMarkerClick = React.useCallback(
-    (fleet: string, robot: RmfModels.RobotState) => {
+  const handleRobotMarkerClick = React.useCallback<Required<RobotsOverlayProps>['onRobotClick']>(
+    (_ev, fleet, robot) => {
       setShowOmniPanel(true);
       viewStackDispatch.push(OmniPanelViewIndex.Robots);
       robotAccordionRefs[robotKey(fleet, robot)].spotlight();
@@ -349,8 +352,8 @@ export default function Dashboard(_props: {}): React.ReactElement {
                 const toLower = robot.name;
                 return toLower.includes(filter) ? (
                   <RobotAccordion
-                    key={robotKey(fleet.name, robot)}
-                    ref={robotAccordionRefs[robotKey(fleet.name, robot)].ref}
+                    key={robotKey(fleet.name, robot.name)}
+                    ref={robotAccordionRefs[robotKey(fleet.name, robot.name)].ref}
                     robot={robot}
                     fleetName={fleet.name}
                     data-component="RobotAccordion"

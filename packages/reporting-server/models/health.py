@@ -15,7 +15,6 @@ class HealthStatus(models.Model):
     actor_id = fields.CharField(max_length=25, null=True)
     health_status = fields.CharField(max_length=25, null=True)
     health_message = fields.TextField(null=True)
-    payload = fields.JSONField()
     created = fields.DatetimeField(auto_now_add=True)
 
 

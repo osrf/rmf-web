@@ -22,6 +22,7 @@ import { HTTPValidationError } from '../models';
 import { ModelObject } from '../models';
 import { SubmitTask } from '../models';
 import { SubmitTaskResponse } from '../models';
+import { TaskSummary } from '../models';
 /**
  * TasksApi - axios parameter creator
  * @export
@@ -79,6 +80,58 @@ export const TasksApiAxiosParamCreator = function (configuration?: Configuration
       localVarRequestOptions.data = needsSerialization
         ? JSON.stringify(body !== undefined ? body : {})
         : body || '';
+
+      return {
+        url: localVarUrlObj.pathname + localVarUrlObj.search + localVarUrlObj.hash,
+        options: localVarRequestOptions,
+      };
+    },
+    /**
+     * **Available in socket.io**
+     * @summary Get Task Summary
+     * @param {string} task_id task_id with &#x27;/&#x27; replaced with &#x27;__&#x27;
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    getTaskSummaryTasksTaskIdSummaryGet: async (
+      task_id: string,
+      options: any = {},
+    ): Promise<RequestArgs> => {
+      // verify required parameter 'task_id' is not null or undefined
+      if (task_id === null || task_id === undefined) {
+        throw new RequiredError(
+          'task_id',
+          'Required parameter task_id was null or undefined when calling getTaskSummaryTasksTaskIdSummaryGet.',
+        );
+      }
+      const localVarPath = `/tasks/{task_id}/summary`.replace(
+        `{${'task_id'}}`,
+        encodeURIComponent(String(task_id)),
+      );
+      // use dummy base URL string because the URL constructor only accepts absolute URLs.
+      const localVarUrlObj = new URL(localVarPath, 'https://example.com');
+      let baseOptions;
+      if (configuration) {
+        baseOptions = configuration.baseOptions;
+      }
+      const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options };
+      const localVarHeaderParameter = {} as any;
+      const localVarQueryParameter = {} as any;
+
+      const query = new URLSearchParams(localVarUrlObj.search);
+      for (const key in localVarQueryParameter) {
+        query.set(key, localVarQueryParameter[key]);
+      }
+      for (const key in options.query) {
+        query.set(key, options.query[key]);
+      }
+      localVarUrlObj.search = new URLSearchParams(query).toString();
+      let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+      localVarRequestOptions.headers = {
+        ...localVarHeaderParameter,
+        ...headersFromBaseOptions,
+        ...options.headers,
+      };
 
       return {
         url: localVarUrlObj.pathname + localVarUrlObj.search + localVarUrlObj.hash,
@@ -295,6 +348,28 @@ export const TasksApiFp = function (configuration?: Configuration) {
       };
     },
     /**
+     * **Available in socket.io**
+     * @summary Get Task Summary
+     * @param {string} task_id task_id with &#x27;/&#x27; replaced with &#x27;__&#x27;
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    async getTaskSummaryTasksTaskIdSummaryGet(
+      task_id: string,
+      options?: any,
+    ): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<TaskSummary>> {
+      const localVarAxiosArgs = await TasksApiAxiosParamCreator(
+        configuration,
+      ).getTaskSummaryTasksTaskIdSummaryGet(task_id, options);
+      return (axios: AxiosInstance = globalAxios, basePath: string = BASE_PATH) => {
+        const axiosRequestArgs = {
+          ...localVarAxiosArgs.options,
+          url: basePath + localVarAxiosArgs.url,
+        };
+        return axios.request(axiosRequestArgs);
+      };
+    },
+    /**
      *
      * @summary Get Tasks
      * @param {string} [task_id] comma separated list of task ids
@@ -398,6 +473,18 @@ export const TasksApiFactory = function (
         .then((request) => request(axios, basePath));
     },
     /**
+     * **Available in socket.io**
+     * @summary Get Task Summary
+     * @param {string} task_id task_id with &#x27;/&#x27; replaced with &#x27;__&#x27;
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    getTaskSummaryTasksTaskIdSummaryGet(task_id: string, options?: any): AxiosPromise<TaskSummary> {
+      return TasksApiFp(configuration)
+        .getTaskSummaryTasksTaskIdSummaryGet(task_id, options)
+        .then((request) => request(axios, basePath));
+    },
+    /**
      *
      * @summary Get Tasks
      * @param {string} [task_id] comma separated list of task ids
@@ -484,6 +571,19 @@ export class TasksApi extends BaseAPI {
   public cancelTaskTasksCancelTaskPost(body: CancelTask, options?: any) {
     return TasksApiFp(this.configuration)
       .cancelTaskTasksCancelTaskPost(body, options)
+      .then((request) => request(this.axios, this.basePath));
+  }
+  /**
+   * **Available in socket.io**
+   * @summary Get Task Summary
+   * @param {string} task_id task_id with &#x27;/&#x27; replaced with &#x27;__&#x27;
+   * @param {*} [options] Override http request option.
+   * @throws {RequiredError}
+   * @memberof TasksApi
+   */
+  public getTaskSummaryTasksTaskIdSummaryGet(task_id: string, options?: any) {
+    return TasksApiFp(this.configuration)
+      .getTaskSummaryTasksTaskIdSummaryGet(task_id, options)
       .then((request) => request(this.axios, this.basePath));
   }
   /**

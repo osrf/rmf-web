@@ -30,15 +30,16 @@ export function useStackNavigator<KeyType>(
   homeView: KeyType,
 ): [KeyType[], StackNavigatorDispatch<KeyType>] {
   const [stack, setStack] = React.useState<KeyType[]>(initialState);
-  return [
-    stack,
-    {
+  const dispatch = React.useMemo(
+    () => ({
       push: (viewId: KeyType) => setStack((prev) => [...prev, viewId]),
       pop: () => setStack((prev) => (prev.length > 1 ? prev.slice(0, prev.length - 1) : prev)),
       home: () => setStack((prev) => [...prev, homeView]),
       reset: () => setStack(initialState),
-    },
-  ];
+    }),
+    [homeView, initialState],
+  );
+  return [stack, dispatch];
 }
 
 export default useStackNavigator;

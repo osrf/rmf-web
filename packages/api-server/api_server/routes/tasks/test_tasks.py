@@ -189,3 +189,40 @@ class TestTasksRoute(RouteFixture):
         resp_json = resp.json()
         items = resp_json["items"]
         self.assertEqual(len(items), 2)
+
+    def test_get_task_summary(self):
+        dataset = [
+            TaskSummary(
+                task_id="task_1",
+                fleet_name="fleet_1",
+                submission_time={"sec": 1000, "nanosec": 0},
+                start_time={"sec": 2000, "nanosec": 0},
+                end_time={"sec": 3000, "nanosec": 0},
+                robot_name="robot_1",
+                state=RmfTaskSummary.STATE_COMPLETED,
+                task_profile={
+                    "description": {
+                        "task_type": {"type": RmfTaskType.TYPE_LOOP},
+                        "priority": {"value": 0},
+                    }
+                },
+            ),
+        ]
+
+        fut = concurrent.futures.Future()
+
+        async def save_data():
+            fut.set_result(
+                await asyncio.gather(
+                    *(ttm.TaskSummary.save_pydantic(data) for data in dataset)
+                )
+            )
+
+        self.server.app.wait_ready()
+        self.server.app.loop.create_task(save_data())
+        fut.result()
+
+        resp = self.session.get(f"{self.base_url}/tasks/task_1/summary")
+        self.assertEqual(200, resp.status_code)
+        resp_json = resp.json()
+        self.assertEqual("task_1", resp_json["task_id"])

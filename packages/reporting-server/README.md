@@ -1,3 +1,11 @@
+# Description
+
+This project is about a server that exposes two APIs, one for writing logs to a persistent storage and the other for generating reports. As the project's name says, the idea is to work as a reporting server. The reporting server is designed to receive data through [Fluentd](https://www.fluentd.org/) (a data collection tool) from different pods within a Kubernetes cluster. Log data is transformed via a parser from the format that Fluentd uses for storage in the server. You can find the log formats [here](https://github.com/open-rmf/rmf-web/blob/main/packages/reporting-server/rest_server/__mocks__/raw_data.py).
+
+In the following image, we can observe how all the pods interact with the reporting server
+![rmf-web kubernetes cluster diagram](https://user-images.githubusercontent.com/28668944/123916706-8b56e300-d9b4-11eb-990f-69e717f87b38.png)
+
+
 # Setup
 
 Install pipenv
@@ -7,9 +15,11 @@ pip3 install pipenv
 ```
 
 If not already done so, [bootstrap](../../README.md#bootstrap) the project, you can use
+
 ```bash
-npm run bootstrap -- packages/reporting-server
+lerna bootstrap --scope=reporting-server
 ```
+
 to bootstrap only this package.
 
 # Run the server
@@ -17,6 +27,18 @@ to bootstrap only this package.
 ```bash
 reporting_server
 ```
+
+When you run this command, two instances of the reporting server will run. One on port 8002 where the endpoints will be enabled to ask for reports and 8003 where the endpoints will be enabled to send logs to the reporting server.
+
+![image](https://user-images.githubusercontent.com/11761240/123881439-b12bab80-d912-11eb-987a-77591add6c5d.png)
+
+For development we recommend running this command:
+
+```bash
+uvicorn --reload rest_server.app:get_app
+```
+
+This would only create one instance of the reporting-server and it'll serve on the default port.
 
 ## Configuration
 
@@ -92,3 +114,9 @@ npm run test:report
 ```bash
 uvicorn --reload rest_server.app:get_app
 ```
+
+## QA
+
+*  I have a zombie process running either on port 8002 or 8003?
+
+   The `reporting_server` runs two instances of the app on the same process. So, sometimes when you shut down one of the reporting-server instances, the other stay alive, resulting in a zombie process. You can kill it by running this command `kill -9 <process id>` (on Linux based OS). That's why we recommend using `uvicorn --reload rest_server.app:get_app` for development purposes.

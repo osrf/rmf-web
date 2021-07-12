@@ -43,16 +43,24 @@ export const DispensersOverlay = (props: DispensersOverlayProps): React.ReactEle
     );
   }, [dispenserResourcesContext, currentFloorName]);
 
+  const dispenserLocations = React.useMemo(
+    () =>
+      dispenserInCurLevel.map(
+        (dispenser) => [dispenser.location.x, dispenser.location.y] as [number, number],
+      ),
+    [dispenserInCurLevel],
+  );
+
   return (
     <SVGOverlay {...otherProps}>
       <svg viewBox={viewBox}>
         {dispenserResourcesContext &&
-          dispenserInCurLevel.map((dispenser: DispenserResource) => {
+          dispenserInCurLevel.map((dispenser, idx) => {
             return (
               <MarkerComponent
                 key={dispenser.guid}
                 guid={dispenser.guid}
-                location={[dispenser.location.x, dispenser.location.y]}
+                location={dispenserLocations[idx]}
                 iconPath={dispenserResourcesContext.getIconPath(dispenser.guid) || undefined}
                 footprint={footprint}
                 onClick={onDispenserClick}

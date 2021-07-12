@@ -9,3 +9,4 @@ export * from './health';
 export * from './ingestor-state';
 export * from './lift-state';
 export * from './user-report';
+export * from './task-summary';

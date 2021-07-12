@@ -7,7 +7,6 @@ import { format } from 'date-fns';
 
 export type FleetStateRowsType = {
   created: string; //date
-  payload: string | unknown;
   fleet_name: string;
   robots: string;
   robot_battery_percent: string;

@@ -28,6 +28,7 @@ import type {
 } from 'api-client';
 import React from 'react';
 import * as RmfModels from 'rmf-models';
+import { PositiveIntField } from '../form-inputs';
 
 type TaskDescription = CleanTaskDescription | LoopTaskDescription | DeliveryTaskDescription;
 
@@ -219,7 +220,6 @@ interface LoopTaskFormProps {
 
 function LoopTaskForm({ taskDesc, loopWaypoints, onChange }: LoopTaskFormProps) {
   const theme = useTheme();
-  const [numOfLoops, setNumOfLoops] = React.useState(taskDesc.num_loops.toString());
 
   return (
     <>
@@ -269,17 +269,15 @@ function LoopTaskForm({ taskDesc, loopWaypoints, onChange }: LoopTaskFormProps) 
             marginRight: theme.spacing(2),
           }}
         >
-          <TextField
+          <PositiveIntField
             id="loops"
-            type="number"
             label="Loops"
             margin="normal"
-            value={numOfLoops}
-            onChange={(ev) => {
-              setNumOfLoops(ev.target.value);
+            value={taskDesc.num_loops}
+            onChange={(_ev, val) => {
               onChange({
                 ...taskDesc,
-                num_loops: parseInt(ev.target.value) || 1,
+                num_loops: val,
               });
             }}
           />
@@ -396,7 +394,6 @@ export function CreateTaskForm({
   const classes = useStyles();
   const [tasks, setTasks] = React.useState<SubmitTask[]>(() => [defaultTask()]);
   const [selectedTaskIdx, setSelectedTaskIdx] = React.useState(0);
-  const [priorityInput, setPriorityInput] = React.useState('0');
   const taskTitles = React.useMemo(
     () => tasks && tasks.map((t, i) => `${i + 1}: ${getShortDescription(t)}`),
     [tasks],
@@ -551,16 +548,14 @@ export function CreateTaskForm({
                       marginRight: theme.spacing(2),
                     }}
                   >
-                    <TextField
+                    <PositiveIntField
                       id="priority"
-                      type="number"
                       label="Priority"
                       margin="normal"
-                      value={priorityInput}
-                      onChange={(ev) => {
-                        task.priority = parseInt(ev.target.value) || 0;
+                      value={task.priority || 0}
+                      onChange={(_ev, val) => {
+                        task.priority = val;
                         updateTasks();
-                        setPriorityInput(ev.target.value);
                       }}
                     />
                   </Grid>

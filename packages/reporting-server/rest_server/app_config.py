@@ -25,6 +25,7 @@ class AppConfig:
     oidc_url: Optional[str]
     aud: str
     iss: Optional[str]
+    log_storage_time: int
 
     def __post_init__(self):
         self.public_url = urllib.parse.urlparse(self.public_url)

@@ -1,4 +1,13 @@
-import { Box, Grid, makeStyles, Theme, Tooltip, Typography, useTheme } from '@material-ui/core';
+import {
+  Box,
+  BoxProps,
+  Grid,
+  makeStyles,
+  Theme,
+  Tooltip,
+  Typography,
+  useTheme,
+} from '@material-ui/core';
 import clsx from 'clsx';
 import React from 'react';
 import * as RmfModels from 'rmf-models';
@@ -92,11 +101,11 @@ function PhaseSeparator({ leftColor, rightColor }: PhaseSeparatorProps) {
   );
 }
 
-export interface TaskPhasesProps {
+export interface TaskPhasesProps extends BoxProps {
   taskSummary: RmfModels.TaskSummary;
 }
 
-export function TaskPhases({ taskSummary }: TaskPhasesProps): JSX.Element {
+export function TaskPhases({ taskSummary, ...boxProps }: TaskPhasesProps): JSX.Element {
   const classes = useStyles();
   const theme = useTheme();
   const phaseColors = getPhaseColors(theme);
@@ -138,7 +147,7 @@ export function TaskPhases({ taskSummary }: TaskPhasesProps): JSX.Element {
   });
 
   return (
-    <Box>
+    <Box {...boxProps}>
       <Grid container={true} wrap="nowrap" className={classes.taskPhasesContainer}>
         {phases.map((phase, idx) => (
           <React.Fragment key={idx}>

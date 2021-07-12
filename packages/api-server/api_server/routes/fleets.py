@@ -1,21 +1,29 @@
 import logging
-from typing import Optional
+from typing import Callable, Optional
 
 from fastapi import Depends, Query
 
 from api_server.models.fleets import Robot
 from api_server.models.pagination import Pagination
-from api_server.models.tasks import TaskStateEnum, TaskSummary
+from api_server.models.tasks import TaskStateEnum
 
 from ..dependencies import WithBaseQuery, base_query_params
 from ..fast_io import FastIORouter
+from ..gateway import RmfGateway
 from ..models import Fleet, FleetState, RobotHealth
 from ..models import tortoise_models as ttm
 from ..rmf_io import RmfEvents
+from .tasks.utils import convert_task_status_msg
 
 
 class FleetsRouter(FastIORouter):
-    def __init__(self, rmf_events: RmfEvents, *, logger: logging.Logger):
+    def __init__(
+        self,
+        rmf_events: RmfEvents,
+        rmf_gateway_dep: Callable[[], RmfGateway],
+        *,
+        logger: logging.Logger,
+    ):
         super().__init__(tags=["Fleets"])
 
         class GetFleetsResponse(Pagination.response_model(Fleet)):
@@ -75,8 +83,9 @@ class FleetsRouter(FastIORouter):
                 TaskStateEnum.QUEUED.value,
             ]
             tasks = await ttm.TaskSummary.filter(
-                state__in=filter_states, **filter_params
-            )
+                state__in=filter_states,
+                **filter_params,
+            ).order_by("start_time")
             for t in tasks:
                 r = robots.get(f"{t.fleet_name}/{t.robot_name}", None)
                 # This should only happen under very rare scenarios, when there are
@@ -87,7 +96,9 @@ class FleetsRouter(FastIORouter):
                     logger.warn(
                         f'task "{t.id_}" is assigned to an unknown fleet/robot ({t.fleet_name}/{t.robot_name}'
                     )
-                r.tasks.append(TaskSummary(**t.data))
+                r.tasks.append(
+                    convert_task_status_msg(t.to_pydantic(), rmf_gateway_dep())
+                )
 
             return Pagination(
                 total_count=robot_states.total_count, items=list(robots.values())

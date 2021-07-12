@@ -15,7 +15,6 @@ async def fleet_state_parser(fullstring: str) -> list:
     for robot in state_json["robots"]:
         fleet_list.append(
             {
-                "payload": modified_string,
                 "fleet_name": state_json["name"],
                 "robots": state_json["robots"],
                 "robot_battery_percent": robot["battery_percent"],

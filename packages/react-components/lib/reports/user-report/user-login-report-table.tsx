@@ -9,7 +9,6 @@ export type UserLoginRowsType = {
   client_id: string;
   created: string; //date
   ip_address: string;
-  payload: string | unknown;
   user_id: string;
   username: string;
 }[];

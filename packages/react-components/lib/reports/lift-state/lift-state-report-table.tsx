@@ -13,7 +13,6 @@ export type LiftStateRowsType = {
   motion_state: string;
   current_floor: string;
   session_id: string;
-  payload: string | unknown;
 }[];
 
 export interface LiftStateReportTable extends DefaultLogTableProps {

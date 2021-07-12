@@ -25,7 +25,6 @@ class IngestorState(models.Model):
     state: IngestorStateEnum = fields.CharEnumField(
         IngestorStateEnum, default=IngestorStateEnum.OFFLINE
     )
-    payload = fields.JSONField()
     guid = fields.CharField(max_length=200)
     created = fields.DatetimeField(auto_now_add=True)
 

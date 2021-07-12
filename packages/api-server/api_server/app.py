@@ -121,6 +121,13 @@ class App(FastIO):
 
             logger.info("updating tasks from RMF")
             try:
+                # Sometimes the node has not finished discovery so we need to call
+                # `wait_for_service` here.
+                # As of rclpy 3.0, `wait_for_service` uses a blocking sleep in a loop so
+                # using it is not recommended after the app has finish startup.
+                ready = self.rmf_gateway.get_tasks_srv.wait_for_service(1)
+                if not ready:
+                    raise HTTPException(503, "ros service not ready")
                 await self.rmf_gateway.update_tasks(rmf_repo)
             except HTTPException as e:
                 logger.error(f"failed to update tasks from RMF ({e.detail})")
@@ -133,6 +140,9 @@ class App(FastIO):
         self.rmf_events = RmfEvents()
         self.rmf_repo = RmfRepository()
         self.rmf_gateway: RmfGateway = None
+        rmf_bookkeeper = RmfBookKeeper(
+            self.rmf_repo, self.rmf_events, logger=logger.getChild("BookKeeper")
+        )
 
         def rmf_gateway_dep():
             return self.rmf_gateway
@@ -148,7 +158,12 @@ class App(FastIO):
             routes.LiftsRouter(self.rmf_events, rmf_gateway_dep, self.rmf_repo),
             prefix="/lifts",
         )
-        self.include_router(routes.TasksRouter(rmf_gateway_dep), prefix="/tasks")
+        self.include_router(
+            routes.TasksRouter(
+                self.rmf_events, rmf_bookkeeper.bookkeeper_events, rmf_gateway_dep
+            ),
+            prefix="/tasks",
+        )
         self.include_router(
             routes.DispensersRouter(self.rmf_events, self.rmf_repo),
             prefix="/dispensers",
@@ -157,7 +172,8 @@ class App(FastIO):
             routes.IngestorsRouter(self.rmf_events, self.rmf_repo), prefix="/ingestors"
         )
         self.include_router(
-            routes.FleetsRouter(self.rmf_events, logger=logger), prefix="/fleets"
+            routes.FleetsRouter(self.rmf_events, rmf_gateway_dep, logger=logger),
+            prefix="/fleets",
         )
 
         @self.fapi.on_event("startup")
@@ -212,29 +228,6 @@ class App(FastIO):
             )
             self.rmf_gateway = RmfGateway(self.rmf_events, static_files)
 
-            # Order is important here
-            # 1. load states from db, this populate the sio/fast_io rooms with the latest data
-            await load_states(self.rmf_gateway, self.rmf_repo)
-
-            # 2. start the services after loading states so that the loaded states are not
-            # used. Failing to do so will cause for example, book keeper to save the loaded states
-            # back into the db and mess up health watchdog's heartbeat system.
-            self.rmf_gateway.subscribe_all()
-            shutdown_cbs.append(self.rmf_gateway.unsubscribe_all)
-            rmf_bookkeeper = RmfBookKeeper(
-                self.rmf_repo, self.rmf_events, logger=logger.getChild("BookKeeper")
-            )
-            await rmf_bookkeeper.start()
-            shutdown_cbs.append(rmf_bookkeeper.stop())
-            health_watchdog = HealthWatchdog(
-                self.rmf_gateway.rmf_events,
-                rmf_repo=rmf_bookkeeper.repo,
-                logger=logger.getChild("HealthWatchdog"),
-            )
-            await health_watchdog.start()
-
-            # 3. start spinning only after setting everything up so that subscriptions
-            # are not "lost" and the spin thread is sleeping because there is no "work"
             stopping = False
 
             def spin():
@@ -254,6 +247,24 @@ class App(FastIO):
                 spin_thread.join()
 
             shutdown_cbs.append(stop_spinning)
+
+            # Order is important here
+            # 1. load states from db, this populate the sio/fast_io rooms with the latest data
+            await load_states(self.rmf_gateway, self.rmf_repo)
+
+            # 2. start the services after loading states so that the loaded states are not
+            # used. Failing to do so will cause for example, book keeper to save the loaded states
+            # back into the db and mess up health watchdog's heartbeat system.
+            self.rmf_gateway.subscribe_all()
+            shutdown_cbs.append(self.rmf_gateway.unsubscribe_all)
+            await rmf_bookkeeper.start()
+            shutdown_cbs.append(rmf_bookkeeper.stop())
+            health_watchdog = HealthWatchdog(
+                self.rmf_gateway.rmf_events,
+                rmf_repo=rmf_bookkeeper.repo,
+                logger=logger.getChild("HealthWatchdog"),
+            )
+            await health_watchdog.start()
 
             self._started.set_result(True)
             logger.info("started app")
