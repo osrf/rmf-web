@@ -12,7 +12,7 @@ const IngestorStateReportConfig = () => {
   const authenticator = React.useContext(AuthenticatorContext);
   const getLogs = async (params: DefaultReportQueryPayload): Promise<IngestorStateRowsType> => {
     return (await getLogData(
-      `${appConfig.reportingServerUrl}/report/ingestor/`,
+      `${appConfig.reportingServerUrl}/report/ingestor_state/`,
       params,
       authenticator.token,
     )) as IngestorStateRowsType;

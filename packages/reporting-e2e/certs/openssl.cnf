@@ -1,0 +1,25 @@
+[ req ]
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+prompt = no
+
+[ req_distinguished_name ]
+O = UNSAFE-Testing
+CN = localhost
+
+[ v3_req ]
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+
+subjectAltName=DNS:localhost
+
+[ usr_cert ]
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+
+subjectAltName=DNS:localhost
+
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer
+
+nsComment = "For testing only"

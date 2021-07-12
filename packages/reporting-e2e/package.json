@@ -1,0 +1,23 @@
+{
+  "name": "reporting-e2e",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "start:keycloak": "docker/keycloak/dockert docker-compose -f docker/docker-compose.yml -p rmf-web up keycloak",
+    "start:reporting-server": "scripts/start-reporting-server.sh",
+    "test": "node scripts/test-e2e.js",
+    "test:dev": "E2E_REPORTING_URL=http://localhost:3000 RMF_LAUNCH_MODE=none wdio"
+  },
+  "devDependencies": {
+    "@types/mocha": "^8.0.3",
+    "@wdio/cli": "6.12.1",
+    "@wdio/local-runner": "6.12.1",
+    "@wdio/mocha-framework": "6.11.0",
+    "serve": "^11.3.2",
+    "ts-node": "^9.1.1",
+    "wdio-chromedriver-service": "^6.0.4"
+  }
+}

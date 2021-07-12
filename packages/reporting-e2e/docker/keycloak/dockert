@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# dockert = short for docker-trampoline.
+
+# Simple script that runs a command with "sudo" if user is not in "docker" group.
+# Because it is not able to enter sudo password when running in background,
+# `sudo` is used with `ssh-askpass` to present a graphical prompt.
+if groups | grep -q '\bdocker\b' || [[ $(id -u) == 0 ]]; then
+  exec "$@"
+else
+  SUDO_ASKPASS=$(which ssh-askpass) exec sudo -A "$@"
+fi
